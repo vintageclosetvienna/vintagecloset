@@ -1,4 +1,5 @@
 export { AdminSidebar, AdminMobileHeader } from './AdminSidebar';
+export { AuthGuard } from './AuthGuard';
 export { StatCard } from './StatCard';
 export { ImageUpload } from './ImageUpload';
 export { FormInput } from './FormInput';

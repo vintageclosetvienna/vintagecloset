@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
   House, 
   Package, 
@@ -10,10 +10,12 @@ import {
   Images,
   SignOut,
   List,
-  X
+  X,
+  ArrowSquareOut
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Logo } from '@/components/ui/Logo';
+import { useAuth } from '@/lib/auth';
 
 const NAV_ITEMS = [
   { href: '/admin', label: 'Dashboard', icon: House },
@@ -30,6 +32,13 @@ interface AdminSidebarProps {
 
 export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { signOut, user } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push('/admin/login');
+  };
 
   return (
     <>
@@ -87,14 +96,32 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
         </nav>
 
         {/* Footer */}
-        <div className="p-3 border-t border-white/10">
+        <div className="p-3 border-t border-white/10 space-y-1">
+          {/* User info */}
+          {user && (
+            <div className="px-3 py-2 mb-2">
+              <p className="text-xs text-white/40 truncate">{user.email}</p>
+            </div>
+          )}
+          
+          {/* View Store */}
           <Link
             href="/"
+            target="_blank"
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/60 hover:text-white hover:bg-white/5 transition-all"
           >
-            <SignOut size={20} />
-            Exit Admin
+            <ArrowSquareOut size={20} />
+            View Store
           </Link>
+          
+          {/* Sign Out */}
+          <button
+            onClick={handleSignOut}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all"
+          >
+            <SignOut size={20} />
+            Sign Out
+          </button>
         </div>
       </aside>
     </>

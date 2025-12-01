@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
+import { ArrowRight, CalendarBlank, MapPin, Clock } from '@phosphor-icons/react';
 import { Reveal } from '@/components/shared/Reveal';
-import { ArrowRight, Calendar, BookOpen } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/Button';
 import { getNextEvent, Event, getShortDate } from '@/lib/events-data';
 import { getFeaturedArticle, JournalArticle } from '@/lib/journal-data';
@@ -35,121 +34,101 @@ export function JournalEventsTeaser() {
     fetchData();
   }, []);
 
-  const shortDate = nextEvent ? getShortDate(nextEvent.date) : null;
-
-  // Don't render if both are empty and not loading
-  if (!isLoading && !featuredArticle && !nextEvent) {
-    return null;
-  }
-
   return (
-    <section className="py-24 lg:py-32 bg-surface">
-      <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 max-w-6xl mx-auto items-stretch">
-          
+    <section className="py-16 md:py-24 px-4 bg-surface">
+      <div className="max-w-6xl mx-auto">
+        <div className="flex flex-col lg:flex-row gap-8 justify-center items-stretch max-w-fit mx-auto">
           {/* Journal Card */}
-          <Reveal className="group relative bg-white rounded-[2rem] p-8 md:p-10 shadow-sm hover:shadow-2xl transition-all duration-500 border border-hairline overflow-hidden hover:-translate-y-1 w-full max-w-xl h-full">
-            <Link href={featuredArticle ? `/journal/${featuredArticle.slug}` : '/journal'} className="block h-full">
-              <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity transform group-hover:scale-110 duration-700">
-                <BookOpen size={200} />
-              </div>
-              
-              <div className="relative z-10 h-full flex flex-col items-start">
-                <span className="inline-block mb-6 text-xs font-bold uppercase tracking-[0.15em] text-accent-start bg-accent-start/5 px-3 py-1 rounded-full">From the Journal</span>
+          <Reveal direction="up" delay={0}>
+            <Link href="/journal" className="group block h-full">
+              <div className="bg-white rounded-2xl p-8 md:p-10 border border-hairline hover:border-accent-start/30 transition-all duration-300 hover:shadow-xl hover:shadow-accent-start/5 w-full md:w-[420px] h-[320px] flex flex-col">
+                <span className="text-xs font-bold uppercase tracking-wider text-accent-start mb-4">
+                  The Journal
+                </span>
                 
                 {isLoading ? (
-                  <div className="space-y-4 flex-1 w-full">
-                    <div className="h-8 bg-surface rounded w-3/4 animate-pulse" />
-                    <div className="h-8 bg-surface rounded w-1/2 animate-pulse" />
-                    <div className="h-5 bg-surface rounded w-full animate-pulse mt-4" />
-                    <div className="h-5 bg-surface rounded w-2/3 animate-pulse" />
+                  <div className="animate-pulse flex-1">
+                    <div className="h-8 bg-surface rounded w-3/4 mb-4" />
+                    <div className="h-4 bg-surface rounded w-full mb-2" />
+                    <div className="h-4 bg-surface rounded w-2/3" />
                   </div>
-                ) : featuredArticle ? (
-                  <>
-                    <h3 className="text-3xl md:text-4xl font-display font-bold text-ink mb-4 leading-tight group-hover:text-accent-start transition-colors duration-300">
-                      {featuredArticle.title}
-                    </h3>
-                    <p className="text-muted text-lg mb-10 flex-1 leading-relaxed max-w-sm">
-                      {featuredArticle.excerpt}
-                    </p>
-                  </>
                 ) : (
                   <>
                     <h3 className="text-3xl md:text-4xl font-display font-bold text-ink mb-4 leading-tight group-hover:text-accent-start transition-colors duration-300">
-                      Stories Coming Soon
+                      {featuredArticle?.title || 'No articles yet'}
                     </h3>
                     <p className="text-muted text-lg mb-10 flex-1 leading-relaxed max-w-sm">
-                      We&apos;re crafting stories about vintage culture, style guides, and more. Stay tuned.
+                      {featuredArticle?.excerpt || 'Check back soon for stories and updates.'}
                     </p>
                   </>
                 )}
                 
-                <div className="mt-auto">
-                  <Button variant="text" className="pl-0 group-hover:pl-2 transition-all text-base font-bold">
-                    {featuredArticle ? 'Read Article' : 'Explore Journal'} <ArrowRight className="ml-2" weight="bold" />
-                  </Button>
+                <div className="flex items-center gap-2 text-accent-start font-medium group-hover:gap-3 transition-all duration-300 mt-auto">
+                  {featuredArticle ? 'Read Article' : 'View Journal'}
+                  <ArrowRight size={18} weight="bold" />
                 </div>
               </div>
             </Link>
           </Reveal>
 
-          {/* Event Card */}
-          <Reveal delay={0.1} className="group relative bg-ink rounded-[2rem] p-8 md:p-10 shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden text-white hover:-translate-y-1 w-full max-w-xl">
-            <Link href="/events" className="block h-full">
-              {nextEvent?.image && (
-                <Image 
-                  src={nextEvent.image}
-                  alt="Event Background"
-                  fill
-                  className="object-cover opacity-20 group-hover:opacity-30 transition-opacity duration-700 scale-105 group-hover:scale-100"
-                />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-ink via-transparent to-transparent opacity-80" />
-              
-              <div className="relative z-10 h-full flex flex-col">
-                <div className="flex justify-between items-start mb-6">
-                  <span className="inline-block px-3 py-1 bg-accent-start rounded-full text-xs font-bold uppercase tracking-[0.15em] text-white shadow-lg">
-                    {nextEvent ? (nextEvent.status === 'Coming Soon' ? 'Coming Soon' : 'Upcoming Event') : 'Events'}
-                  </span>
-                  <Calendar size={28} className="text-white/40" weight="duotone" />
-                </div>
+          {/* Events Card */}
+          <Reveal direction="up" delay={0.1}>
+            <Link href="/events" className="group block h-full">
+              <div className="bg-ink rounded-2xl p-8 md:p-10 hover:bg-ink/95 transition-all duration-300 hover:shadow-xl w-full md:w-[420px] h-[320px] flex flex-col">
+                <span className="text-xs font-bold uppercase tracking-wider text-accent-start mb-4">
+                  Upcoming Event
+                </span>
                 
                 {isLoading ? (
-                  <div className="space-y-4 flex-1">
-                    <div className="h-12 bg-white/10 rounded w-1/3 animate-pulse" />
-                    <div className="h-6 bg-white/10 rounded w-2/3 animate-pulse" />
-                    <div className="h-4 bg-white/10 rounded w-1/2 animate-pulse" />
+                  <div className="animate-pulse flex-1">
+                    <div className="h-8 bg-white/10 rounded w-3/4 mb-4" />
+                    <div className="h-4 bg-white/10 rounded w-full mb-2" />
+                    <div className="h-4 bg-white/10 rounded w-2/3" />
                   </div>
-                ) : nextEvent && shortDate ? (
-                  <div className="mb-8">
-                    <div className="text-5xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-br from-white to-white/50 mb-2 tracking-tighter">
-                      {shortDate.day} <span className="text-lg align-top text-white/40 font-medium tracking-normal ml-1">{shortDate.month}</span>
+                ) : nextEvent ? (
+                  <>
+                    <h3 className="text-3xl md:text-4xl font-display font-bold text-white mb-4 leading-tight group-hover:text-accent-start transition-colors duration-300">
+                      {nextEvent.title}
+                    </h3>
+                    
+                    <div className="space-y-2 mb-6 flex-1">
+                      <div className="flex items-center gap-2 text-white/70">
+                        <CalendarBlank size={16} weight="bold" />
+                        <span className="text-sm">{getShortDate(nextEvent.date).month} {getShortDate(nextEvent.date).day}</span>
+                      </div>
+                      {nextEvent.time && (
+                        <div className="flex items-center gap-2 text-white/70">
+                          <Clock size={16} weight="bold" />
+                          <span className="text-sm">{nextEvent.time}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2 text-white/70">
+                        <MapPin size={16} weight="bold" />
+                        <span className="text-sm">{nextEvent.location}</span>
+                      </div>
                     </div>
-                    <h3 className="text-2xl font-bold mb-2">{nextEvent.title}</h3>
-                    <p className="text-white/60 text-base flex items-center gap-2">
-                      {nextEvent.location}
-                    </p>
-                  </div>
+                  </>
                 ) : (
-                  <div className="mb-8">
-                    <h3 className="text-2xl font-bold mb-2">Events Coming Soon</h3>
-                    <p className="text-white/60 text-base">
-                      Pop-ups, markets, and community gatherings in Vienna. Check back for dates.
+                  <>
+                    <h3 className="text-3xl md:text-4xl font-display font-bold text-white mb-4 leading-tight">
+                      Coming Soon
+                    </h3>
+                    <p className="text-white/60 text-lg mb-6 flex-1">
+                      Stay tuned for upcoming events and pop-ups in Vienna.
                     </p>
-                  </div>
+                  </>
                 )}
                 
-                <div className="mt-auto pt-6 border-t border-white/10">
-                  <Button variant="primary" className="w-full bg-white text-ink hover:bg-gray-100 border-none h-11 text-base shadow-lg font-bold">
-                    {nextEvent ? (nextEvent.status === 'Coming Soon' ? 'Get Notified' : 'RSVP Now') : 'View Events'}
-                  </Button>
+                <div className="flex items-center gap-2 text-accent-start font-medium group-hover:gap-3 transition-all duration-300 mt-auto">
+                  {nextEvent ? 'View Details' : 'View Events'}
+                  <ArrowRight size={18} weight="bold" />
                 </div>
               </div>
             </Link>
           </Reveal>
-
         </div>
       </div>
     </section>
   );
 }
+
