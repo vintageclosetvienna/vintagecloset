@@ -1,5 +1,4 @@
 import * as React from "react";
-import { Slot } from "@radix-ui/react-slot"; // Wait, I didn't install radix-slot. I should just use simple polymorphism or install it. Plan didn't mention Radix. I'll stick to standard props.
 import { cn } from "@/lib/utils";
 import { CircleNotch } from "@phosphor-icons/react";
 

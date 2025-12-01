@@ -153,7 +153,7 @@ export async function markProductAsSold(productId: string): Promise<boolean> {
 
   const { error } = await supabase
     .from('products')
-    .update({ is_sold: true })
+    .update({ is_sold: true } as never)
     .eq('id', productId);
 
   if (error) {

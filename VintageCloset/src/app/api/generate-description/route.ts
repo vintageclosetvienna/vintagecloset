@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 const SYSTEM_PROMPT = `Du bist ein Experte für Vintage-Mode und arbeitest für einen hochwertigen Vintage-Store in Wien. 
 Deine Aufgabe ist es, kurze, ansprechende Produktbeschreibungen zu erstellen.
 
@@ -25,6 +21,11 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Create OpenAI client only when the route is called
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
 
     const body = await request.json();
     const { productName, imageUrl } = body;

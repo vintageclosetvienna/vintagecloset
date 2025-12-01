@@ -2,16 +2,24 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createServerClient } from '@/lib/supabase';
 
-// Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2025-04-30.basil',
-});
-
-// Webhook secret for verifying signatures
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
 export async function POST(request: NextRequest) {
   try {
+    // Check for Stripe configuration
+    if (!process.env.STRIPE_SECRET_KEY) {
+      console.error('STRIPE_SECRET_KEY not configured');
+      return NextResponse.json(
+        { error: 'Stripe not configured' },
+        { status: 500 }
+      );
+    }
+
+    // Initialize Stripe inside the handler
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2025-11-17.clover',
+    });
+
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    
     const body = await request.text();
     const signature = request.headers.get('stripe-signature');
 
@@ -85,7 +93,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   // Get customer details from session
   const customerDetails = session.customer_details;
-  const shippingDetails = session.shipping_details || session.customer_details;
+  // Use collected_information for shipping if available, otherwise fall back to customer_details
+  const shippingDetails = (session as unknown as { collected_information?: { shipping_details?: typeof customerDetails } }).collected_information?.shipping_details || customerDetails;
 
   if (!customerDetails?.email || !shippingDetails?.address) {
     console.error('Missing customer or shipping details in session');
@@ -96,29 +105,31 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     const supabase = createServerClient();
 
     // Create the order record
+    const orderData = {
+      product_id: productId || null,
+      stripe_session_id: session.id,
+      stripe_payment_intent_id: session.payment_intent as string || null,
+      status: 'paid',
+      customer_name: customerDetails.name || 'Unknown',
+      customer_email: customerDetails.email,
+      shipping_address: [
+        shippingDetails.address?.line1,
+        shippingDetails.address?.line2,
+      ].filter(Boolean).join(', '),
+      shipping_city: shippingDetails.address?.city || '',
+      shipping_postal_code: shippingDetails.address?.postal_code || '',
+      shipping_country: shippingDetails.address?.country || '',
+      original_price: originalPrice,
+      discount_applied: discountApplied,
+      final_price: (session.amount_total || 0) / 100, // Convert from cents
+      product_title: productName,
+      product_size: productSize,
+      product_image: productImage,
+    };
+    
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .insert({
-        product_id: productId || null,
-        stripe_session_id: session.id,
-        stripe_payment_intent_id: session.payment_intent as string || null,
-        status: 'paid',
-        customer_name: customerDetails.name || 'Unknown',
-        customer_email: customerDetails.email,
-        shipping_address: [
-          shippingDetails.address?.line1,
-          shippingDetails.address?.line2,
-        ].filter(Boolean).join(', '),
-        shipping_city: shippingDetails.address?.city || '',
-        shipping_postal_code: shippingDetails.address?.postal_code || '',
-        shipping_country: shippingDetails.address?.country || '',
-        original_price: originalPrice,
-        discount_applied: discountApplied,
-        final_price: (session.amount_total || 0) / 100, // Convert from cents
-        product_title: productName,
-        product_size: productSize,
-        product_image: productImage,
-      })
+      .insert(orderData as never)
       .select()
       .single();
 
@@ -127,13 +138,14 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       return;
     }
 
-    console.log('Order created:', order.id);
+    const orderId = (order as { id: string } | null)?.id;
+    console.log('Order created:', orderId);
 
     // Mark the product as sold (if we have a product ID)
     if (productId) {
       const { error: updateError } = await supabase
         .from('products')
-        .update({ is_sold: true })
+        .update({ is_sold: true } as never)
         .eq('id', productId);
 
       if (updateError) {
@@ -146,11 +158,4 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     console.error('Error processing checkout completion:', error);
   }
 }
-
-// Disable body parsing for webhooks (Stripe needs raw body)
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
 

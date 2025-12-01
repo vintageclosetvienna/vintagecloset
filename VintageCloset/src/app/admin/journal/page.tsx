@@ -317,7 +317,7 @@ export default function JournalListPage() {
 
         const { error } = await supabase
           .from('journal_articles')
-          .update(dbData)
+          .update(dbData as never)
           .eq('id', articleId);
 
         if (error) throw error;

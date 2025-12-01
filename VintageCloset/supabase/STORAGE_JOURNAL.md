@@ -48,6 +48,12 @@ journal-images/
 Run this SQL in the Supabase SQL Editor:
 
 ```sql
+-- Drop existing policies if they exist (safe to run multiple times)
+DROP POLICY IF EXISTS "Journal images are publicly accessible" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can upload journal images" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can update journal images" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can delete journal images" ON storage.objects;
+
 -- Allow public read access to journal images
 CREATE POLICY "Journal images are publicly accessible"
 ON storage.objects FOR SELECT

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle, Package, ArrowRight } from '@phosphor-icons/react';
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Reveal } from '@/components/shared/Reveal';
 import { useCart } from '@/lib/cart';
 
-export default function CheckoutSuccessPage() {
+function CheckoutSuccessContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('session_id');
   const [isLoading, setIsLoading] = useState(true);
@@ -94,6 +94,21 @@ export default function CheckoutSuccessPage() {
         </Reveal>
       </div>
     </div>
+  );
+}
+
+export default function CheckoutSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-[80vh] flex items-center justify-center">
+        <div className="animate-pulse text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-accent-start/20" />
+          <p className="text-muted">Loading...</p>
+        </div>
+      </div>
+    }>
+      <CheckoutSuccessContent />
+    </Suspense>
   );
 }
 

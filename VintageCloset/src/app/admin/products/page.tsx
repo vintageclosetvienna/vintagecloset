@@ -494,7 +494,7 @@ export default function ProductsPage() {
 
     const { error } = await supabase
       .from('products')
-      .update(dbData)
+      .update(dbData as never)
       .eq('id', productId);
 
     if (error) {

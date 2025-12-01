@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
 
     // Initialize Stripe with the secret key
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: '2025-04-30.basil',
+      apiVersion: '2025-11-17.clover',
     });
 
     const body = await request.json();
@@ -142,25 +142,27 @@ export async function POST(request: NextRequest) {
     // Create a pending order in the database if Supabase is configured
     if (isSupabaseConfigured()) {
       try {
+        const orderData = {
+          product_id: product.id,
+          stripe_session_id: session.id,
+          status: 'pending',
+          customer_name: customerName,
+          customer_email: customerEmail,
+          shipping_address: shippingAddress,
+          shipping_city: shippingCity,
+          shipping_postal_code: shippingPostalCode,
+          shipping_country: shippingCountry,
+          original_price: originalPrice,
+          discount_applied: discount,
+          final_price: finalPrice,
+          product_title: product.title,
+          product_size: product.size,
+          product_image: product.images[0] || null,
+        };
+        
         const { error: orderError } = await supabase
           .from('orders')
-          .insert({
-            product_id: product.id,
-            stripe_session_id: session.id,
-            status: 'pending',
-            customer_name: customerName,
-            customer_email: customerEmail,
-            shipping_address: shippingAddress,
-            shipping_city: shippingCity,
-            shipping_postal_code: shippingPostalCode,
-            shipping_country: shippingCountry,
-            original_price: originalPrice,
-            discount_applied: discount,
-            final_price: finalPrice,
-            product_title: product.title,
-            product_size: product.size,
-            product_image: product.images[0] || null,
-          });
+          .insert(orderData as never);
 
         if (orderError) {
           console.error('Error creating pending order:', orderError);

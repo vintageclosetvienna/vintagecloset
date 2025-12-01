@@ -81,23 +81,25 @@ export default function NewJournalPage() {
 
       if (isSupabaseConfigured()) {
         // Save to Supabase
+        const articleData = {
+          slug,
+          title: formData.title,
+          excerpt: formData.excerpt,
+          content: formData.content,
+          category: formData.category,
+          cover_image: coverImage,
+          images: formData.coverImage,
+          author: 'Vintage Closet Team',
+          published_at: new Date().toISOString().split('T')[0],
+          read_time: readTime,
+          featured: formData.featured,
+          tags: formData.tags,
+          is_draft: isDraft,
+        };
+        
         const { error: insertError } = await supabase
           .from('journal_articles')
-          .insert({
-            slug,
-            title: formData.title,
-            excerpt: formData.excerpt,
-            content: formData.content,
-            category: formData.category,
-            cover_image: coverImage,
-            images: formData.coverImage,
-            author: 'Vintage Closet Team',
-            published_at: new Date().toISOString().split('T')[0],
-            read_time: readTime,
-            featured: formData.featured,
-            tags: formData.tags,
-            is_draft: isDraft,
-          });
+          .insert(articleData as never);
 
         if (insertError) {
           // Check for duplicate slug

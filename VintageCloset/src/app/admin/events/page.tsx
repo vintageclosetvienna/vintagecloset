@@ -293,7 +293,7 @@ export default function EventsListPage() {
 
         const { error } = await supabase
           .from('events')
-          .update(dbData)
+          .update(dbData as never)
           .eq('id', eventId);
 
         if (error) throw error;

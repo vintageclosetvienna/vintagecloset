@@ -168,7 +168,7 @@ export async function updateSiteImage(
 
   const { data: updated, error } = await supabase
     .from('site_images')
-    .update(updateData)
+    .update(updateData as never)
     .eq('key', key)
     .select()
     .single();
@@ -218,7 +218,7 @@ export async function uploadSiteImage(
   // Update database with new URL
   const { error: updateError } = await supabase
     .from('site_images')
-    .update({ url: publicUrl })
+    .update({ url: publicUrl } as never)
     .eq('key', key);
 
   if (updateError) {

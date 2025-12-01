@@ -49,6 +49,12 @@ product-images/
 Run this SQL in the Supabase SQL Editor:
 
 ```sql
+-- Drop existing policies if they exist (safe to run multiple times)
+DROP POLICY IF EXISTS "Product images are publicly accessible" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can upload product images" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can update product images" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can delete product images" ON storage.objects;
+
 -- Allow public read access to product images
 CREATE POLICY "Product images are publicly accessible"
 ON storage.objects FOR SELECT

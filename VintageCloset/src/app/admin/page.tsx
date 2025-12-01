@@ -34,6 +34,15 @@ interface RecentSale {
   status: string;
 }
 
+interface OrderRecord {
+  id: string;
+  status: string;
+  final_price: string;
+  product_title: string;
+  product_image: string;
+  created_at: string;
+}
+
 const statusColors: Record<string, string> = {
   paid: 'bg-green-50 text-green-700',
   shipped: 'bg-blue-50 text-blue-700',
@@ -67,15 +76,17 @@ export default function AdminDashboard() {
           .eq('is_sold', false);
 
         // Fetch orders for stats
-        const { data: orders } = await supabase
+        const { data: ordersData } = await supabase
           .from('orders')
           .select('*')
           .order('created_at', { ascending: false });
 
-        if (orders) {
+        const orders = (ordersData || []) as OrderRecord[];
+
+        if (orders.length > 0) {
           // Calculate total sales (paid orders only)
           const paidOrders = orders.filter(o => o.status === 'paid' || o.status === 'shipped' || o.status === 'delivered');
-          const totalSales = paidOrders.reduce((sum, o) => sum + parseFloat(o.final_price || 0), 0);
+          const totalSales = paidOrders.reduce((sum, o) => sum + parseFloat(o.final_price || '0'), 0);
           
           // Count pending orders
           const pendingCount = orders.filter(o => o.status === 'pending').length;
@@ -85,7 +96,7 @@ export default function AdminDashboard() {
             id: o.id,
             product: o.product_title || 'Unknown Product',
             image: o.product_image || '',
-            price: `€${parseFloat(o.final_price || 0).toFixed(2)}`,
+            price: `€${parseFloat(o.final_price || '0').toFixed(2)}`,
             date: o.created_at,
             status: o.status,
           }));

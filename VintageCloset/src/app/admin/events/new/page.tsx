@@ -64,20 +64,22 @@ export default function NewEventPage() {
 
       if (isSupabaseConfigured()) {
         // Save to Supabase
+        const eventData = {
+          slug,
+          title: formData.title,
+          description: formData.description || null,
+          date: formData.date,
+          time: formData.time || null,
+          location: formData.location,
+          image,
+          status: formData.status as 'Upcoming' | 'Coming Soon' | 'Past',
+          spots_left: spotsLeft,
+          is_published: true,
+        };
+        
         const { error: insertError } = await supabase
           .from('events')
-          .insert({
-            slug,
-            title: formData.title,
-            description: formData.description || null,
-            date: formData.date,
-            time: formData.time || null,
-            location: formData.location,
-            image,
-            status: formData.status as 'Upcoming' | 'Coming Soon' | 'Past',
-            spots_left: spotsLeft,
-            is_published: true,
-          });
+          .insert(eventData as never);
 
         if (insertError) {
           // Check for duplicate slug

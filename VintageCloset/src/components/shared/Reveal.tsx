@@ -38,7 +38,7 @@ export function Reveal({
       transition: {
         duration: duration,
         delay: delay,
-        ease: "easeOut",
+        ease: "easeOut" as const,
       },
     },
   };
