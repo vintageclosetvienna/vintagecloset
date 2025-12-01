@@ -1,0 +1,22 @@
+:root {
+  --surface: #F5F7F8;
+  --ink: #0C1114;
+  --muted: #4F5A63;
+  --accent-start: #00B1BB;
+  --accent-end: #1B7177;
+  --hairline: rgba(12, 17, 20, 0.08);
+  
+  /* Derived */
+  --accent-gradient: linear-gradient(90deg, var(--accent-start), var(--accent-end));
+  
+  /* Spacing & Layout */
+  --header-height: 64px;
+  --radius-base: 6px;
+  --radius-lg: 16px;
+}
+
+@media (prefers-color-scheme: dark) {
+  /* Minimal dark mode support if needed, though design seems light-focused */
+}
+
+
