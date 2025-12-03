@@ -11,7 +11,8 @@ import {
   Storefront,
   Images,
   CloudArrowUp,
-  SpinnerGap
+  SpinnerGap,
+  ImageSquare
 } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/Button';
 import { 
@@ -48,6 +49,11 @@ interface ImageCardProps {
 }
 
 function ImageCard({ image, position, onEdit, isLoading }: ImageCardProps) {
+  const [hasError, setHasError] = useState(false);
+  const [isImageLoading, setIsImageLoading] = useState(true);
+  
+  const isValidUrl = image.url && image.url.length > 0 && !image.url.includes('blob:');
+  
   return (
     <div className="bg-white rounded-xl border border-hairline overflow-hidden hover:shadow-lg transition-shadow group">
       <div className="relative aspect-video overflow-hidden bg-surface">
@@ -55,16 +61,33 @@ function ImageCard({ image, position, onEdit, isLoading }: ImageCardProps) {
           <div className="absolute inset-0 flex items-center justify-center bg-surface">
             <SpinnerGap size={32} className="animate-spin text-accent-start" />
           </div>
+        ) : !isValidUrl || hasError ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+            <div className="text-center">
+              <ImageSquare size={40} weight="thin" className="text-gray-300 mx-auto" />
+              <p className="text-xs text-gray-400 mt-2">No image uploaded</p>
+            </div>
+          </div>
         ) : (
-          <Image 
-            src={image.url} 
-            alt={image.label} 
-            fill 
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
-          />
+          <>
+            {isImageLoading && (
+              <div className="absolute inset-0 bg-gray-100 animate-pulse" />
+            )}
+            <Image 
+              src={image.url} 
+              alt={image.label} 
+              fill 
+              className={`object-cover group-hover:scale-105 transition-transform duration-500 ${isImageLoading ? 'opacity-0' : 'opacity-100'}`}
+              onLoad={() => setIsImageLoading(false)}
+              onError={() => {
+                setHasError(true);
+                setIsImageLoading(false);
+              }}
+            />
+          </>
         )}
         {position && (
-          <div className="absolute top-3 left-3">
+          <div className="absolute top-3 left-3 z-10">
             <span className="inline-block px-2.5 py-1 bg-ink/80 backdrop-blur-sm text-white text-xs font-bold uppercase tracking-wider rounded-md">
               {position}
             </span>
@@ -76,7 +99,7 @@ function ImageCard({ image, position, onEdit, isLoading }: ImageCardProps) {
         <p className="text-xs text-muted mb-3">{image.description}</p>
         <Button variant="ghost" size="sm" className="w-full gap-2" onClick={onEdit}>
           <PencilSimple size={14} weight="bold" />
-          Change Image
+          {hasError || !isValidUrl ? 'Upload Image' : 'Change Image'}
         </Button>
       </div>
     </div>
@@ -209,19 +232,28 @@ function EditModal({ image, position, isCarousel, onClose, onSave, isSaving }: E
                 disabled={isSaving}
               />
               
-              {newUrl ? (
+              {newUrl && newUrl.length > 0 ? (
                 <div className="relative aspect-video">
                   <Image 
                     src={newUrl} 
                     alt="Preview" 
                     fill 
                     className="object-cover"
+                    unoptimized={newUrl.startsWith('blob:')}
                   />
                   <div className="absolute inset-0 bg-ink/0 hover:bg-ink/40 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
                     <div className="bg-white rounded-lg px-4 py-2 shadow-lg">
                       <p className="text-sm font-medium text-ink">Click or drag to replace</p>
                     </div>
                   </div>
+                  {selectedFile && (
+                    <div className="absolute bottom-3 left-3 right-3">
+                      <div className="bg-green-500 text-white text-xs font-medium px-3 py-1.5 rounded-lg inline-flex items-center gap-2">
+                        <Check size={12} weight="bold" />
+                        New image selected - click Save to upload
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="aspect-video flex items-center justify-center bg-gradient-to-br from-surface via-surface to-accent-start/5">

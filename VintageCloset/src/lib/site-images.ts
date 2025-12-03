@@ -285,11 +285,18 @@ export async function getCollectionHeroImages(): Promise<{
   };
 }
 
-// Get specific collection hero - returns fallback placeholder if not configured
+// Fallback hero images
+const FALLBACK_HEROES: Record<string, string> = {
+  women: 'https://images.unsplash.com/photo-1550614000-4b9519e40569?q=80&w=2070&auto=format&fit=crop',
+  men: 'https://images.unsplash.com/photo-1617114919297-3c8dd6caea94?q=80&w=1964&auto=format&fit=crop',
+  unisex: 'https://images.unsplash.com/photo-1523381294911-8d3cead13475?q=80&w=2070&auto=format&fit=crop',
+};
+
+// Get specific collection hero - returns fallback if not configured
 export async function getCollectionHero(gender: 'women' | 'men' | 'unisex'): Promise<string> {
   const image = await getSiteImage(`${gender}-hero`);
   if (image) return image.url;
   
-  // Fallback placeholder - a neutral gray placeholder
-  return '/placeholder-hero.jpg';
+  // Fallback to Unsplash image
+  return FALLBACK_HEROES[gender];
 }
