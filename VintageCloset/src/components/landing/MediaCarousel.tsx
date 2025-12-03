@@ -1,15 +1,19 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Reveal } from '@/components/shared/Reveal';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { Image as ImageIcon } from '@phosphor-icons/react';
-import { motion } from 'framer-motion';
+import { motion, useAnimationControls } from 'framer-motion';
 import { getMediaCarouselImages, type SiteImage } from '@/lib/site-images';
 
 export function MediaCarousel() {
   const [carouselImages, setCarouselImages] = useState<SiteImage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDragging, setIsDragging] = useState(false);
+  const controls = useAnimationControls();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const currentX = useRef(0);
 
   useEffect(() => {
     async function fetchImages() {
@@ -24,6 +28,36 @@ export function MediaCarousel() {
     }
     fetchImages();
   }, []);
+
+  // Start auto-scroll animation
+  const startAutoScroll = (fromX: number) => {
+    if (!containerRef.current) return;
+    
+    const containerWidth = containerRef.current.scrollWidth / 2;
+    // Normalize position to be within bounds
+    const normalizedX = ((fromX % containerWidth) + containerWidth) % containerWidth;
+    const targetX = normalizedX - containerWidth;
+    
+    // Calculate remaining duration based on position
+    const progress = normalizedX / containerWidth;
+    const remainingDuration = 30 * (1 - progress);
+    
+    controls.start({
+      x: [fromX, targetX],
+      transition: {
+        repeat: Infinity,
+        ease: "linear",
+        duration: remainingDuration > 0 ? remainingDuration : 30,
+      }
+    });
+  };
+
+  // Initialize animation when images load
+  useEffect(() => {
+    if (carouselImages.length > 0 && !isDragging) {
+      startAutoScroll(0);
+    }
+  }, [carouselImages]);
 
   // Hide section entirely if no images and not loading
   if (!isLoading && carouselImages.length === 0) {
@@ -56,18 +90,33 @@ export function MediaCarousel() {
   return (
     <section className="py-12 md:py-24 overflow-hidden bg-surface">
        <Reveal width="100%">
-          <div className="flex overflow-hidden">
+          <div className="flex overflow-hidden cursor-grab active:cursor-grabbing">
             <motion.div 
+              ref={containerRef}
               className="flex gap-4 md:gap-8 px-4 md:px-6 pb-12"
-              animate={{ x: ["-50%", "0%"] }}
-              transition={{ 
-                repeat: Infinity, 
-                ease: "linear", 
-                duration: 30,
+              animate={controls}
+              drag="x"
+              dragConstraints={{ left: -10000, right: 10000 }}
+              dragElastic={0}
+              onDragStart={() => {
+                setIsDragging(true);
+                controls.stop();
               }}
-              style={{ width: "max-content" }}
+              onDrag={(_, info) => {
+                currentX.current = info.point.x;
+              }}
+              onDragEnd={(_, info) => {
+                setIsDragging(false);
+                // Get current transform and continue from there
+                if (containerRef.current) {
+                  const transform = window.getComputedStyle(containerRef.current).transform;
+                  const matrix = new DOMMatrix(transform);
+                  startAutoScroll(matrix.m41);
+                }
+              }}
+              style={{ width: "max-content", touchAction: "pan-y" }}
             >
-                              {items.map((item, idx) => (
+              {items.map((item, idx) => (
                 <div 
                   key={idx} 
                   className="relative flex-shrink-0 w-[85vw] md:w-[35vw] aspect-video rounded-2xl overflow-hidden group shadow-md hover:shadow-xl transition-all duration-500"
