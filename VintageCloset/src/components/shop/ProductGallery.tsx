@@ -4,10 +4,61 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from '@phosphor-icons/react';
+import { X, ImageSquare } from '@phosphor-icons/react';
 
 interface ProductGalleryProps {
   images: string[];
+}
+
+// Gallery image with error handling
+function GalleryImage({ 
+  src, 
+  alt, 
+  fill = true,
+  priority = false,
+  className = ''
+}: { 
+  src: string; 
+  alt: string; 
+  fill?: boolean;
+  priority?: boolean;
+  className?: string;
+}) {
+  const [hasError, setHasError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  const isValidSrc = src && typeof src === 'string' && src.length > 0 && src !== 'null' && src !== 'undefined';
+  
+  if (!isValidSrc || hasError) {
+    return (
+      <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <ImageSquare size={48} weight="thin" className="text-gray-300 mx-auto" />
+          <p className="text-xs text-gray-400 mt-2">No image</p>
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <>
+      {isLoading && (
+        <div className="absolute inset-0 bg-gray-100 animate-pulse" />
+      )}
+      <Image
+        src={src}
+        alt={alt}
+        fill={fill}
+        className={`${className} transition-opacity duration-300 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
+        priority={priority}
+        onLoad={() => setIsLoading(false)}
+        onError={() => {
+          setHasError(true);
+          setIsLoading(false);
+        }}
+      />
+    </>
+  );
 }
 
 export function ProductGallery({ images }: ProductGalleryProps) {
@@ -31,10 +82,9 @@ export function ProductGallery({ images }: ProductGalleryProps) {
                   transition={{ duration: 0.4 }}
                   className="absolute inset-0"
                >
-                  <Image 
+                  <GalleryImage 
                      src={images[activeImage]} 
                      alt="Product Main" 
-                     fill 
                      className="object-cover group-hover:scale-105 transition-transform duration-700" 
                      priority
                   />
@@ -60,7 +110,7 @@ export function ProductGallery({ images }: ProductGalleryProps) {
                      activeImage === idx ? "border-accent-start scale-105 shadow-md" : "border-transparent hover:border-hairline opacity-70 hover:opacity-100"
                   )}
                >
-                  <Image src={img} alt={`View ${idx + 1}`} fill className="object-cover" />
+                  <GalleryImage src={img} alt={`View ${idx + 1}`} className="object-cover" />
                </button>
             ))}
          </div>
@@ -93,10 +143,9 @@ export function ProductGallery({ images }: ProductGalleryProps) {
                   </button>
                   
                   <div className="relative w-full max-w-5xl aspect-[4/5] rounded-2xl overflow-hidden">
-                     <Image 
+                     <GalleryImage 
                         src={images[activeImage]} 
                         alt="Product Full View" 
-                        fill 
                         className="object-contain"
                      />
                   </div>

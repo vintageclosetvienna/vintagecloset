@@ -1,16 +1,63 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
-import { Heart, ArrowRight, CaretLeft, CaretRight, Square } from '@phosphor-icons/react';
+import { Heart, CaretLeft, CaretRight, Square, ImageSquare } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Product, getDiscountedPrice } from '@/lib/data';
 
+import Image from 'next/image';
+
 interface ProductCardProps {
   product: Product;
   priority?: boolean;
+}
+
+// Product image with error handling
+function ProductImage({ 
+  src, 
+  alt, 
+  priority = false 
+}: { 
+  src: string; 
+  alt: string; 
+  priority?: boolean;
+}) {
+  const [hasError, setHasError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  const isValidSrc = src && typeof src === 'string' && src.length > 0 && src !== 'null' && src !== 'undefined';
+  
+  if (!isValidSrc || hasError) {
+    return (
+      <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <ImageSquare size={40} weight="thin" className="text-gray-300 mx-auto" />
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <>
+      {isLoading && (
+        <div className="absolute inset-0 bg-gray-100 animate-pulse" />
+      )}
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        className={`object-cover transition-opacity duration-300 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
+        priority={priority}
+        onLoad={() => setIsLoading(false)}
+        onError={() => {
+          setHasError(true);
+          setIsLoading(false);
+        }}
+      />
+    </>
+  );
 }
 
 export function ProductCard({ product, priority = false }: ProductCardProps) {
@@ -85,11 +132,9 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
               className="absolute inset-0"
             >
-              <Image
+              <ProductImage
                 src={images[currentImage]}
                 alt={product.title}
-                fill
-                className="object-cover"
                 priority={priority}
               />
             </motion.div>
