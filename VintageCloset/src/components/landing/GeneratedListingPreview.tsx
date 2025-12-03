@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
 import { Reveal } from '@/components/shared/Reveal';
+import { SafeImage } from '@/components/ui/SafeImage';
 import { CheckCircle, MagnifyingGlass, Eye, Heart, Star } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getStorySlidesImages, type SiteImage } from '@/lib/site-images';
@@ -106,7 +106,7 @@ export function GeneratedListingPreview() {
                   exit={{ x: -140, opacity: 0, rotate: -2, transition: { duration: 0.4 } }}
                   className="absolute inset-0"
                 >
-                  <Image
+                  <SafeImage
                     src={activeSlide.image}
                     alt={activeSlide.title}
                     fill

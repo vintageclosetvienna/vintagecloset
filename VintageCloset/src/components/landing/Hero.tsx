@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Image from 'next/image';
 import { ArrowRight } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/Button';
 import { Reveal } from '@/components/shared/Reveal';
+import { SafeImage } from '@/components/ui/SafeImage';
 import { getLandingHeroImages, type SiteImage } from '@/lib/site-images';
 
 // Fallback images
@@ -85,7 +85,7 @@ export function Hero() {
           {/* Back Left Image */}
           <Reveal direction="scale" delay={0.7} className="absolute left-0 md:left-8 top-1/2 -translate-y-1/2 w-[45%] md:w-[40%] aspect-[3/4] z-0 origin-center">
              <div className="relative w-full h-full rounded-xl overflow-hidden shadow-lg -rotate-6 opacity-80 brightness-90">
-                <Image 
+                <SafeImage 
                    src={leftImage}
                    alt="Vintage Mood 1"
                    fill
@@ -97,7 +97,7 @@ export function Hero() {
           {/* Back Right Image */}
           <Reveal direction="scale" delay={0.7} className="absolute right-0 md:right-8 top-1/2 -translate-y-1/2 w-[45%] md:w-[40%] aspect-[3/4] z-0 origin-center">
              <div className="relative w-full h-full rounded-xl overflow-hidden shadow-lg rotate-6 opacity-80 brightness-90">
-                <Image 
+                <SafeImage 
                    src={rightImage}
                    alt="Vintage Mood 2"
                    fill
@@ -109,7 +109,7 @@ export function Hero() {
           {/* Main Center Image */}
           <Reveal direction="up" delay={0.5} className="relative z-10 w-[65%] md:w-[60%] aspect-[3/4]">
              <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl bg-gray-100 border-4 border-white transform hover:-translate-y-2 transition-transform duration-500">
-                <Image 
+                <SafeImage 
                    src={centerImage}
                    alt="Vintage Clothing Rack"
                    fill

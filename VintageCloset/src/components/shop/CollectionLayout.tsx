@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Image from 'next/image';
 import { FilterRail } from '@/components/shop/FilterRail';
 import { Reveal } from '@/components/shared/Reveal';
+import { SafeImage } from '@/components/ui/SafeImage';
 import { getCollectionHero } from '@/lib/site-images';
 
 // Fallback images
@@ -46,7 +46,7 @@ export function CollectionLayout({ title, description, heroImage: propHeroImage,
   return (
     <>
       <div className="relative min-h-[60vh] md:min-h-[50vh] flex items-end pb-12 md:items-center overflow-hidden">
-         <Image 
+         <SafeImage 
             src={heroImage} 
             alt={title} 
             fill 

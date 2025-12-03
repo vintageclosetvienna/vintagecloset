@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { Reveal } from '@/components/shared/Reveal';
+import { SafeImage } from '@/components/ui/SafeImage';
 import { ArrowRight } from '@phosphor-icons/react';
 import { getCollectionHighlightsImages, type SiteImage } from '@/lib/site-images';
 
@@ -58,7 +58,7 @@ export function CollectionHighlights() {
              {collections.map((col, idx) => (
                <Reveal key={idx} delay={idx * 0.1} className="group block relative aspect-[4/5] rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500">
                   <Link href={col.href} className="block w-full h-full">
-                    <Image 
+                    <SafeImage 
                       src={col.image} 
                       alt={col.title} 
                       fill 

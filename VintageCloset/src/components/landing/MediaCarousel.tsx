@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Image from 'next/image';
 import { Reveal } from '@/components/shared/Reveal';
+import { SafeImage } from '@/components/ui/SafeImage';
 import { Image as ImageIcon } from '@phosphor-icons/react';
 import { motion } from 'framer-motion';
 import { getMediaCarouselImages, type SiteImage } from '@/lib/site-images';
@@ -67,15 +67,15 @@ export function MediaCarousel() {
               }}
               style={{ width: "max-content" }}
             >
-              {items.map((item, idx) => (
+                              {items.map((item, idx) => (
                 <div 
                   key={idx} 
                   className="relative flex-shrink-0 w-[85vw] md:w-[35vw] aspect-video rounded-2xl overflow-hidden group shadow-md hover:shadow-xl transition-all duration-500"
                 >
-                   <div className="absolute inset-0 bg-gray-200 animate-pulse" />
-                   <Image 
+                   <div className="absolute inset-0 bg-gray-200" />
+                   <SafeImage 
                      src={item.src} 
-                     alt={item.label} 
+                     alt={item.label || 'Carousel image'} 
                      fill 
                      className="object-cover transition-transform duration-700 group-hover:scale-105 relative z-10" 
                    />
