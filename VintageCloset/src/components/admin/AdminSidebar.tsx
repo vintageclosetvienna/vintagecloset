@@ -8,6 +8,7 @@ import {
   Notebook, 
   CalendarBlank, 
   Images,
+  Ticket,
   SignOut,
   List,
   X,
@@ -20,6 +21,7 @@ import { useAuth } from '@/lib/auth';
 const NAV_ITEMS = [
   { href: '/admin', label: 'Dashboard', icon: House },
   { href: '/admin/products', label: 'Products', icon: Package },
+  { href: '/admin/gutscheine', label: 'Gutscheine', icon: Ticket },
   { href: '/admin/journal', label: 'Journal', icon: Notebook },
   { href: '/admin/events', label: 'Events', icon: CalendarBlank },
   { href: '/admin/media', label: 'Site Images', icon: Images },
