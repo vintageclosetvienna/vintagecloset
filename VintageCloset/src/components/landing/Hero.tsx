@@ -51,8 +51,8 @@ export function Hero() {
           
           <Reveal delay={0.2}>
             <h1 className="font-display font-bold text-5xl md:text-7xl lg:text-8xl leading-[0.95] tracking-tight text-ink">
-              Vintage <br />
-              <span className="text-gradient">Closet.</span>
+              Vintage Closet<br />
+              <span className="text-gradient">Vienna.</span>
             </h1>
           </Reveal>
 
