@@ -1,11 +1,13 @@
 'use client';
 
-import { X, Trash, ShoppingBag } from '@phosphor-icons/react';
+import { useState, useEffect } from 'react';
+import { X, Trash, ShoppingBag, Tag } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/Button';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { useCart } from '@/lib/cart';
 import { useRouter } from 'next/navigation';
+import { getProductById, type Product } from '@/lib/data';
 
 interface CartSheetProps {
   isOpen: boolean;
@@ -15,6 +17,35 @@ interface CartSheetProps {
 export function CartSheet({ isOpen, onClose }: CartSheetProps) {
   const { items, removeItem, getSubtotal, itemCount } = useCart();
   const router = useRouter();
+  const [product, setProduct] = useState<Product | null>(null);
+
+  // Fetch product data to get discount info
+  useEffect(() => {
+    async function fetchProduct() {
+      if (items.length > 0 && items[0].id) {
+        const productData = await getProductById(items[0].id);
+        setProduct(productData);
+      } else {
+        setProduct(null);
+      }
+    }
+    fetchProduct();
+  }, [items]);
+
+  // Calculate original price and discount
+  const getOriginalPrice = (): number => {
+    if (!product) return parseFloat(getSubtotal().replace('€', '').replace(',', '.'));
+    return parseFloat(product.price.replace('€', '').replace(',', '.'));
+  };
+
+  const getDiscountAmount = (): number => {
+    if (!product || !product.discount || product.discount === 0) return 0;
+    return getOriginalPrice() * (product.discount / 100);
+  };
+
+  const getFinalPrice = (): number => {
+    return getOriginalPrice() - getDiscountAmount();
+  };
 
   const handleCheckout = () => {
     if (items.length === 0) return;
@@ -96,17 +127,26 @@ export function CartSheet({ isOpen, onClose }: CartSheetProps) {
              {items.length > 0 && (
                <div className="p-6 border-t border-hairline bg-surface space-y-4">
                   <div className="space-y-2">
-                     <div className="flex justify-between text-sm text-muted">
-                        <span>Subtotal</span>
-                        <span>{getSubtotal()}</span>
+                     <div className="flex justify-between text-sm">
+                        <span className="text-muted">Subtotal</span>
+                        <span className="font-medium text-ink">€{getOriginalPrice().toFixed(2)}</span>
                      </div>
+                     {getDiscountAmount() > 0 && (
+                       <div className="flex justify-between text-sm">
+                         <span className="flex items-center gap-1.5 text-blue-600">
+                           <Tag size={14} weight="fill" />
+                           <span className="font-medium">Discount ({product?.discount}%)</span>
+                         </span>
+                         <span className="font-medium text-blue-600">-€{getDiscountAmount().toFixed(2)}</span>
+                       </div>
+                     )}
                      <div className="flex justify-between text-sm text-muted">
                         <span>Shipping</span>
-                        <span>Free</span>
+                        <span className="font-medium">Free</span>
                      </div>
                      <div className="flex justify-between text-lg font-bold text-ink pt-2 border-t border-dashed border-hairline">
                         <span>Total</span>
-                        <span>{getSubtotal()}</span>
+                        <span>€{getFinalPrice().toFixed(2)}</span>
                      </div>
                   </div>
                   <Button 
