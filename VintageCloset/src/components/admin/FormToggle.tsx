@@ -13,7 +13,7 @@ interface FormToggleProps {
 export function FormToggle({ label, description, checked, onChange, className }: FormToggleProps) {
   return (
     <div className={cn("flex items-center justify-between gap-4", className)}>
-      <div>
+      <div className="flex-1">
         <p className="text-sm font-medium text-ink">{label}</p>
         {description && (
           <p className="text-xs text-muted mt-0.5">{description}</p>
@@ -25,14 +25,14 @@ export function FormToggle({ label, description, checked, onChange, className }:
         aria-checked={checked}
         onClick={() => onChange(!checked)}
         className={cn(
-          "relative w-11 h-6 rounded-full transition-colors",
-          checked ? "bg-gradient-to-r from-accent-start to-accent-end" : "bg-hairline"
+          "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-accent-start focus:ring-offset-2",
+          checked ? "bg-gradient-to-r from-accent-start to-accent-end" : "bg-gray-200"
         )}
       >
         <span
           className={cn(
-            "absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform",
-            checked ? "translate-x-6" : "translate-x-1"
+            "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out",
+            checked ? "translate-x-5" : "translate-x-0"
           )}
         />
       </button>
