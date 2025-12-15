@@ -133,7 +133,7 @@ export function Header() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed top-0 right-0 bottom-0 w-[85%] max-w-xs bg-surface z-50 shadow-2xl border-l border-hairline md:hidden flex flex-col"
+              className="fixed top-0 right-0 bottom-0 w-[85%] max-w-xs bg-surface z-50 shadow-2xl border-l border-hairline md:hidden flex flex-col overflow-hidden"
             >
               <div className="flex items-center justify-between p-4 border-b border-hairline h-[var(--header-height)]">
                 <span className="text-sm font-semibold text-muted uppercase tracking-wider">Menu</span>
@@ -142,7 +142,7 @@ export function Header() {
                 </Button>
               </div>
               
-              <div className="flex-1 overflow-y-auto py-6 px-4 space-y-6">
+              <div className="flex-1 overflow-y-auto overscroll-contain py-6 px-4 space-y-6">
                 <nav className="flex flex-col space-y-4">
                   {NAV_LINKS.map((link) => (
                     <Link

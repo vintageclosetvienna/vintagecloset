@@ -211,7 +211,7 @@ export function FilterRail({ gender = 'unisex' }: FilterRailProps) {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 350 }}
-              className="fixed bottom-0 left-0 right-0 z-50 bg-surface rounded-t-2xl shadow-2xl max-h-[70vh] flex flex-col"
+              className="fixed bottom-0 left-0 right-0 z-50 bg-surface rounded-t-2xl shadow-2xl max-h-[70vh] flex flex-col overflow-hidden"
             >
               {/* Handle */}
               <div className="flex justify-center pt-3 pb-1">
@@ -235,7 +235,7 @@ export function FilterRail({ gender = 'unisex' }: FilterRailProps) {
               </div>
               
               {/* Content */}
-              <div className="flex-1 overflow-y-auto p-5">
+              <div className="flex-1 overflow-y-auto overscroll-contain p-5">
                 {activeDrawer === 'all' ? (
                   // All Filters View
                   <div className="space-y-6">

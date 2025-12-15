@@ -125,7 +125,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                     transition={{ duration: 0.2 }}
                     className="border-t border-hairline overflow-hidden"
                   >
-                    <div className="py-6 max-h-[60vh] overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+                    <div className="py-6 max-h-[60vh] overflow-y-auto overscroll-contain">
                       {isLoading ? (
                         <div className="flex items-center justify-center py-8">
                           <div className="w-6 h-6 border-2 border-accent-start border-t-transparent rounded-full animate-spin" />

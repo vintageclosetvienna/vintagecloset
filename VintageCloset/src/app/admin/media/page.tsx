@@ -176,8 +176,8 @@ function EditModal({ image, position, isCarousel, onClose, onSave, isSaving }: E
   };
 
   return (
-    <div className="fixed inset-0 bg-ink/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-ink/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-hairline flex-shrink-0">
           <div>
@@ -192,7 +192,7 @@ function EditModal({ image, position, isCarousel, onClose, onSave, isSaving }: E
         </div>
 
         {/* Content - Scrollable */}
-        <div className="p-6 space-y-6 overflow-y-auto flex-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        <div className="p-6 space-y-6 overflow-y-auto flex-1 overscroll-contain">
           {/* Category Name - Only for carousel */}
           {isCarousel && (
             <div>
