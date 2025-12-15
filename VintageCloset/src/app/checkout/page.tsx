@@ -8,6 +8,7 @@ import { ArrowLeft, ShoppingBag, CreditCard, Lock, Ticket, Check, X } from '@pho
 import { Button } from '@/components/ui/Button';
 import { useCart } from '@/lib/cart';
 import { validateDiscountCode, calculateDiscount } from '@/lib/discount-codes';
+import { getProductById, type Product } from '@/lib/data';
 
 interface ShippingInfo {
   customerName: string;
@@ -42,6 +43,7 @@ export default function CheckoutPage() {
     amount: number;
   } | null>(null);
   const [discountError, setDiscountError] = useState<string | null>(null);
+  const [product, setProduct] = useState<Product | null>(null);
 
   // Redirect to home if cart is empty
   useEffect(() => {
@@ -50,11 +52,36 @@ export default function CheckoutPage() {
     }
   }, [items, router]);
 
+  // Fetch product data to get discount info
+  useEffect(() => {
+    async function fetchProduct() {
+      if (items.length > 0 && items[0].id) {
+        const productData = await getProductById(items[0].id);
+        setProduct(productData);
+      }
+    }
+    fetchProduct();
+  }, [items]);
+
   const updateField = (field: keyof ShippingInfo, value: string) => {
     setShippingInfo(prev => ({ ...prev, [field]: value }));
   };
 
-  // Calculate subtotal as number
+  // Get original price from product (without any product discount)
+  const getOriginalPrice = (): number => {
+    if (!product) return getSubtotalNumber();
+    const priceStr = product.price.replace('€', '').replace(',', '.');
+    return parseFloat(priceStr);
+  };
+
+  // Get product discount amount
+  const getProductDiscountAmount = (): number => {
+    if (!product || !product.discount || product.discount === 0) return 0;
+    const originalPrice = getOriginalPrice();
+    return originalPrice * (product.discount / 100);
+  };
+
+  // Calculate subtotal (after product discount, before Gutschein)
   const getSubtotalNumber = (): number => {
     return items.reduce((sum, item) => {
       const price = parseFloat(item.price.replace('€', '').replace(',', '.'));
@@ -62,7 +89,7 @@ export default function CheckoutPage() {
     }, 0);
   };
 
-  // Calculate final total with discount
+  // Calculate final total with Gutschein discount
   const getFinalTotal = (): number => {
     const subtotal = getSubtotalNumber();
     if (appliedDiscount) {
@@ -433,8 +460,14 @@ export default function CheckoutPage() {
               <div className="border-t border-hairline pt-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted">Subtotal</span>
-                  <span className="font-medium">€{getSubtotalNumber().toFixed(2)}</span>
+                  <span className="font-medium">€{getOriginalPrice().toFixed(2)}</span>
                 </div>
+                {getProductDiscountAmount() > 0 && (
+                  <div className="flex justify-between text-sm text-blue-600">
+                    <span className="font-medium">Produkt Rabatt</span>
+                    <span className="font-medium">-€{getProductDiscountAmount().toFixed(2)}</span>
+                  </div>
+                )}
                 {appliedDiscount && (
                   <div className="flex justify-between text-sm text-green-600">
                     <span className="font-medium">Gutschein ({appliedDiscount.code})</span>
