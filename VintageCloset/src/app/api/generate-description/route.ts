@@ -28,13 +28,38 @@ export async function POST(request: NextRequest) {
     });
 
     const body = await request.json();
-    const { productName, imageUrl } = body;
+    const { productName, imageUrls } = body;
 
     if (!productName) {
       return NextResponse.json(
         { error: 'Product name is required' },
         { status: 400 }
       );
+    }
+
+    // Build message content with all images
+    const hasImages = imageUrls && Array.isArray(imageUrls) && imageUrls.length > 0;
+    
+    const userContent: (OpenAI.Chat.Completions.ChatCompletionContentPart)[] = [
+      {
+        type: 'text' as const,
+        text: `Erstelle eine Produktbeschreibung für: "${productName}"${hasImages ? ` (${imageUrls.length} Foto${imageUrls.length > 1 ? 's' : ''} zur Referenz)` : ''}`,
+      },
+    ];
+
+    // Add all images to the content
+    if (hasImages) {
+      imageUrls.forEach((url: string) => {
+        if (url && url.length > 0) {
+          userContent.push({
+            type: 'image_url' as const,
+            image_url: {
+              url: url,
+              detail: 'low' as const,
+            },
+          });
+        }
+      });
     }
 
     // Build messages array
@@ -45,21 +70,7 @@ export async function POST(request: NextRequest) {
       },
       {
         role: 'user',
-        content: imageUrl
-          ? [
-              {
-                type: 'text' as const,
-                text: `Erstelle eine Produktbeschreibung für: "${productName}"`,
-              },
-              {
-                type: 'image_url' as const,
-                image_url: {
-                  url: imageUrl,
-                  detail: 'low' as const,
-                },
-              },
-            ]
-          : `Erstelle eine Produktbeschreibung für: "${productName}"`,
+        content: hasImages ? userContent : `Erstelle eine Produktbeschreibung für: "${productName}"`,
       },
     ];
 

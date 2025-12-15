@@ -138,7 +138,7 @@ function EditProductModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           productName: formData.title,
-          imageUrl: formData.images[0] || null,
+          imageUrls: formData.images || [],
         }),
       });
 
