@@ -200,7 +200,7 @@ function EditEventModal({
 
               {/* Published Toggle */}
               <div className="flex items-center justify-between p-4 bg-surface rounded-xl">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-1">
                   <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
                     {formData.isPublished ? (
                       <Eye size={20} className="text-green-600" />
@@ -216,13 +216,13 @@ function EditEventModal({
                 <button
                   type="button"
                   onClick={() => updateField('isPublished', !formData.isPublished)}
-                  className={`relative w-12 h-6 rounded-full transition-colors ${
-                    formData.isPublished ? 'bg-green-500' : 'bg-gray-300'
+                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+                    formData.isPublished ? 'bg-green-500' : 'bg-gray-200'
                   }`}
                 >
                   <span
-                    className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                      formData.isPublished ? 'translate-x-7' : 'translate-x-1'
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                      formData.isPublished ? 'translate-x-5' : 'translate-x-0'
                     }`}
                   />
                 </button>
