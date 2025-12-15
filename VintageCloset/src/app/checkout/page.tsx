@@ -81,21 +81,25 @@ export default function CheckoutPage() {
     return originalPrice * (product.discount / 100);
   };
 
-  // Calculate subtotal (after product discount, before Gutschein)
+  // Calculate price after product discount (before Gutschein)
+  const getPriceAfterProductDiscount = (): number => {
+    const originalPrice = getOriginalPrice();
+    const productDiscount = getProductDiscountAmount();
+    return originalPrice - productDiscount;
+  };
+
+  // Calculate subtotal (after product discount, before Gutschein) - for backward compatibility
   const getSubtotalNumber = (): number => {
-    return items.reduce((sum, item) => {
-      const price = parseFloat(item.price.replace('€', '').replace(',', '.'));
-      return sum + price;
-    }, 0);
+    return getPriceAfterProductDiscount();
   };
 
   // Calculate final total with Gutschein discount
   const getFinalTotal = (): number => {
-    const subtotal = getSubtotalNumber();
+    const priceAfterProductDiscount = getPriceAfterProductDiscount();
     if (appliedDiscount) {
-      return Math.max(0, subtotal - appliedDiscount.amount);
+      return Math.max(0, priceAfterProductDiscount - appliedDiscount.amount);
     }
-    return subtotal;
+    return priceAfterProductDiscount;
   };
 
   // Apply discount code
