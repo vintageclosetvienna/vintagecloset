@@ -27,7 +27,7 @@ export const FormSelect = forwardRef<HTMLSelectElement, FormSelectProps>(
             className={cn(
               "w-full h-11 px-4 pr-10 rounded-lg border border-hairline bg-white text-ink appearance-none",
               "focus:outline-none focus:border-accent-start focus:ring-2 focus:ring-accent-start/20",
-              "transition-all cursor-pointer",
+              "transition-all cursor-pointer relative z-10",
               error && "border-red-400 focus:border-red-400 focus:ring-red-400/20",
               !props.value && "text-muted/60"
             )}
