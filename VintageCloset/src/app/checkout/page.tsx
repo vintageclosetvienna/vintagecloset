@@ -67,9 +67,17 @@ export default function CheckoutPage() {
     setShippingInfo(prev => ({ ...prev, [field]: value }));
   };
 
+  // Get cart price (what's displayed in cart - already has product discount applied)
+  const getCartPrice = (): number => {
+    return items.reduce((sum, item) => {
+      const price = parseFloat(item.price.replace('€', '').replace(',', '.'));
+      return sum + price;
+    }, 0);
+  };
+
   // Get original price from product (without any product discount)
   const getOriginalPrice = (): number => {
-    if (!product) return getSubtotalNumber();
+    if (!product) return getCartPrice();
     const priceStr = product.price.replace('€', '').replace(',', '.');
     return parseFloat(priceStr);
   };
