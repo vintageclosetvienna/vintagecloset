@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, ShoppingBag, CreditCard, Lock } from '@phosphor-icons/react';
+import { ArrowLeft, ShoppingBag, CreditCard, Lock, Ticket, Check, X } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/Button';
 import { useCart } from '@/lib/cart';
+import { validateDiscountCode, calculateDiscount } from '@/lib/discount-codes';
 
 interface ShippingInfo {
   customerName: string;
@@ -30,6 +31,17 @@ export default function CheckoutPage() {
     shippingPostalCode: '',
     shippingCountry: 'Austria',
   });
+  
+  // Discount code state
+  const [discountCode, setDiscountCode] = useState('');
+  const [isValidatingCode, setIsValidatingCode] = useState(false);
+  const [appliedDiscount, setAppliedDiscount] = useState<{
+    code: string;
+    type: 'percentage' | 'fixed';
+    value: number;
+    amount: number;
+  } | null>(null);
+  const [discountError, setDiscountError] = useState<string | null>(null);
 
   // Redirect to home if cart is empty
   useEffect(() => {
@@ -40,6 +52,72 @@ export default function CheckoutPage() {
 
   const updateField = (field: keyof ShippingInfo, value: string) => {
     setShippingInfo(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Calculate subtotal as number
+  const getSubtotalNumber = (): number => {
+    return items.reduce((sum, item) => {
+      const price = parseFloat(item.price.replace('€', '').replace(',', '.'));
+      return sum + price;
+    }, 0);
+  };
+
+  // Calculate final total with discount
+  const getFinalTotal = (): number => {
+    const subtotal = getSubtotalNumber();
+    if (appliedDiscount) {
+      return Math.max(0, subtotal - appliedDiscount.amount);
+    }
+    return subtotal;
+  };
+
+  // Apply discount code
+  const handleApplyDiscount = async () => {
+    if (!discountCode.trim()) return;
+    
+    setIsValidatingCode(true);
+    setDiscountError(null);
+
+    try {
+      const subtotal = getSubtotalNumber();
+      const productId = items[0]?.id;
+      
+      const validation = await validateDiscountCode(
+        discountCode.trim(),
+        productId,
+        subtotal
+      );
+
+      if (validation.isValid && validation.discountType && validation.discountValue !== null) {
+        const discountAmount = calculateDiscount(
+          validation.discountType,
+          validation.discountValue,
+          subtotal
+        );
+
+        setAppliedDiscount({
+          code: discountCode.trim().toUpperCase(),
+          type: validation.discountType,
+          value: validation.discountValue,
+          amount: discountAmount,
+        });
+        setDiscountCode('');
+        setDiscountError(null);
+      } else {
+        setDiscountError(validation.errorMessage || 'Ungültiger Gutscheincode');
+      }
+    } catch (err) {
+      console.error('Error validating discount:', err);
+      setDiscountError('Fehler bei der Validierung');
+    } finally {
+      setIsValidatingCode(false);
+    }
+  };
+
+  // Remove applied discount
+  const handleRemoveDiscount = () => {
+    setAppliedDiscount(null);
+    setDiscountError(null);
   };
 
   const isValid = 
@@ -69,6 +147,7 @@ export default function CheckoutPage() {
           productId: items[0].id,
           productSlug: items[0].slug,
           shippingInfo,
+          discountCode: appliedDiscount?.code || null,
         }),
       });
 
@@ -285,19 +364,90 @@ export default function CheckoutPage() {
                 ))}
               </div>
 
-              {/* Divider */}
+              {/* Discount Code */}
+              <div className="border-t border-hairline pt-4 mb-4">
+                <div className="space-y-3">
+                  {!appliedDiscount ? (
+                    <>
+                      <div className="flex items-center gap-2 text-sm font-medium text-ink mb-2">
+                        <Ticket size={16} />
+                        <span>Gutscheincode</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={discountCode}
+                          onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleApplyDiscount())}
+                          placeholder="Code eingeben"
+                          disabled={isValidatingCode}
+                          className="flex-1 h-10 px-3 rounded-lg border border-hairline bg-white text-ink text-sm font-mono uppercase placeholder:text-muted/60 focus:outline-none focus:border-accent-start focus:ring-2 focus:ring-accent-start/20 transition-all disabled:opacity-50"
+                        />
+                        <Button
+                          type="button"
+                          onClick={handleApplyDiscount}
+                          disabled={!discountCode.trim() || isValidatingCode}
+                          isLoading={isValidatingCode}
+                          size="sm"
+                          className="px-4"
+                        >
+                          Anwenden
+                        </Button>
+                      </div>
+                      {discountError && (
+                        <p className="text-xs text-red-600 flex items-center gap-1">
+                          <X size={12} weight="bold" />
+                          {discountError}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
+                          <Check size={14} weight="bold" className="text-white" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-green-900">{appliedDiscount.code}</p>
+                          <p className="text-xs text-green-700">
+                            {appliedDiscount.type === 'percentage' 
+                              ? `${appliedDiscount.value}% Rabatt` 
+                              : `€${appliedDiscount.value.toFixed(2)} Rabatt`}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRemoveDiscount}
+                        className="p-1.5 text-green-700 hover:text-green-900 hover:bg-green-100 rounded-lg transition-colors"
+                        title="Gutschein entfernen"
+                      >
+                        <X size={16} weight="bold" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Pricing Summary */}
               <div className="border-t border-hairline pt-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted">Subtotal</span>
-                  <span className="font-medium">{getSubtotal()}</span>
+                  <span className="font-medium">€{getSubtotalNumber().toFixed(2)}</span>
                 </div>
+                {appliedDiscount && (
+                  <div className="flex justify-between text-sm text-green-600">
+                    <span className="font-medium">Gutschein ({appliedDiscount.code})</span>
+                    <span className="font-medium">-€{appliedDiscount.amount.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted">Shipping</span>
-                  <span className="font-medium">Free</span>
+                  <span className="text-muted">Versand</span>
+                  <span className="font-medium">Gratis</span>
                 </div>
                 <div className="flex justify-between text-lg font-bold text-ink pt-2 border-t border-dashed border-hairline mt-2">
                   <span>Total</span>
-                  <span>{getSubtotal()}</span>
+                  <span>€{getFinalTotal().toFixed(2)}</span>
                 </div>
               </div>
             </div>

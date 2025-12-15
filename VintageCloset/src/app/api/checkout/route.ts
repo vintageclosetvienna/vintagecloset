@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getProductById, getPriceAsNumber } from '@/lib/data';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { validateDiscountCode, useDiscountCode, calculateDiscount } from '@/lib/discount-codes';
 
 interface ShippingInfo {
   customerName: string;
@@ -29,10 +30,11 @@ export async function POST(request: NextRequest) {
     });
 
     const body = await request.json();
-    const { productId, productSlug, shippingInfo } = body as {
+    const { productId, productSlug, shippingInfo, discountCode } = body as {
       productId?: string;
       productSlug?: string;
       shippingInfo?: ShippingInfo;
+      discountCode?: string | null;
     };
 
     // Validate shipping info
@@ -87,10 +89,51 @@ export async function POST(request: NextRequest) {
 
     // Calculate prices
     const originalPrice = getPriceAsNumber(product.price);
-    const discount = product.discount || 0;
-    const finalPrice = discount > 0 
-      ? originalPrice * (1 - discount / 100)
+    const productDiscount = product.discount || 0;
+    let priceAfterProductDiscount = productDiscount > 0 
+      ? originalPrice * (1 - productDiscount / 100)
       : originalPrice;
+
+    // Validate and apply discount code if provided
+    let discountCodeData: {
+      code: string;
+      type: 'percentage' | 'fixed';
+      value: number;
+      amount: number;
+    } | null = null;
+
+    if (discountCode && discountCode.trim()) {
+      const validation = await validateDiscountCode(
+        discountCode.trim(),
+        product.id,
+        priceAfterProductDiscount
+      );
+
+      if (validation.isValid && validation.discountType && validation.discountValue !== null) {
+        const discountAmount = calculateDiscount(
+          validation.discountType,
+          validation.discountValue,
+          priceAfterProductDiscount
+        );
+
+        discountCodeData = {
+          code: discountCode.trim().toUpperCase(),
+          type: validation.discountType,
+          value: validation.discountValue,
+          amount: discountAmount,
+        };
+      } else {
+        return NextResponse.json(
+          { error: validation.errorMessage || 'Ungültiger Gutscheincode' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Calculate final price with discount code
+    const finalPrice = discountCodeData 
+      ? Math.max(0, priceAfterProductDiscount - discountCodeData.amount)
+      : priceAfterProductDiscount;
 
     // Get the origin for redirect URLs
     const origin = request.headers.get('origin') || 'http://localhost:3000';
@@ -125,7 +168,11 @@ export async function POST(request: NextRequest) {
         size: product.size,
         productImage: product.images[0] || '',
         originalPrice: originalPrice.toString(),
-        discount: discount.toString(),
+        productDiscount: productDiscount.toString(),
+        discountCode: discountCodeData?.code || '',
+        discountCodeType: discountCodeData?.type || '',
+        discountCodeValue: discountCodeData?.value.toString() || '',
+        discountCodeAmount: discountCodeData?.amount.toString() || '',
         finalPrice: finalPrice.toString(),
         gender: product.gender,
         category: product.category,
@@ -138,6 +185,16 @@ export async function POST(request: NextRequest) {
         shippingCountry,
       },
     });
+
+    // Mark discount code as used (increment usage count)
+    if (discountCodeData && isSupabaseConfigured()) {
+      try {
+        await useDiscountCode(discountCodeData.code);
+      } catch (err) {
+        console.error('Error marking discount code as used:', err);
+        // Don't fail the checkout, just log the error
+      }
+    }
 
     // Create a pending order in the database if Supabase is configured
     if (isSupabaseConfigured()) {
@@ -153,7 +210,9 @@ export async function POST(request: NextRequest) {
           shipping_postal_code: shippingPostalCode,
           shipping_country: shippingCountry,
           original_price: originalPrice,
-          discount_applied: discount,
+          discount_applied: productDiscount,
+          discount_code: discountCodeData?.code || null,
+          discount_code_amount: discountCodeData?.amount || 0,
           final_price: finalPrice,
           product_title: product.title,
           product_size: product.size,
