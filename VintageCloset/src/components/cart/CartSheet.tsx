@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { X, Trash, ShoppingBag, Tag } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/Button';
 import { motion, AnimatePresence } from 'framer-motion';
-import Image from 'next/image';
+import { SafeImage } from '@/components/ui/SafeImage';
 import { useCart } from '@/lib/cart';
 import { useRouter } from 'next/navigation';
 import { getProductById, type Product } from '@/lib/data';
@@ -98,7 +98,7 @@ export function CartSheet({ isOpen, onClose }: CartSheetProps) {
                   items.map(item => (
                     <div key={item.id} className="flex gap-4">
                        <div className="relative w-20 h-24 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                          <Image src={item.image} alt={item.title} fill className="object-cover" />
+                          <SafeImage src={item.image} alt={item.title} fill className="object-cover" />
                        </div>
                        <div className="flex-1 flex flex-col justify-between">
                           <div>
