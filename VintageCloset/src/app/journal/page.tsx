@@ -6,10 +6,12 @@ import Link from 'next/link';
 import { Reveal } from '@/components/shared/Reveal';
 import { ArrowRight, Clock, BookOpen } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/Button';
+import { SafeImage } from '@/components/ui/SafeImage';
 import { 
   getJournalArticles,
   type JournalArticle 
 } from '@/lib/journal-data';
+import { getSiteImage } from '@/lib/site-images';
 
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
@@ -107,29 +109,34 @@ function ArticleCardSkeleton() {
 export default function JournalPage() {
   const [articles, setArticles] = useState<JournalArticle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [heroImage, setHeroImage] = useState('https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=2070&auto=format&fit=crop');
 
   useEffect(() => {
-    async function fetchArticles() {
+    async function fetchData() {
       setIsLoading(true);
       try {
-        const data = await getJournalArticles();
-        setArticles(data);
+        const [articlesData, heroImg] = await Promise.all([
+          getJournalArticles(),
+          getSiteImage('journal-hero')
+        ]);
+        setArticles(articlesData);
+        if (heroImg) setHeroImage(heroImg.url);
       } catch (error) {
-        console.error('Error fetching articles:', error);
+        console.error('Error fetching data:', error);
         setArticles([]);
       } finally {
         setIsLoading(false);
       }
     }
-    fetchArticles();
+    fetchData();
   }, []);
 
   return (
     <div className="min-h-screen bg-surface">
       {/* Hero */}
       <div className="relative min-h-[50vh] md:min-h-[45vh] flex items-end">
-        <Image 
-          src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=2070&auto=format&fit=crop"
+        <SafeImage 
+          src={heroImage}
           alt="The Journal"
           fill
           className="object-cover"

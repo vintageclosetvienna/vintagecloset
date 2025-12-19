@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Reveal } from '@/components/shared/Reveal';
 import { Button } from '@/components/ui/Button';
+import { SafeImage } from '@/components/ui/SafeImage';
 import { MapPin, Clock, CalendarCheck, ArrowRight, Bell } from '@phosphor-icons/react';
 import { 
   getEvents, 
@@ -11,6 +12,7 @@ import {
   formatEventDate,
   getShortDate,
 } from '@/lib/events-data';
+import { getSiteImage } from '@/lib/site-images';
 
 function EventCardSkeleton() {
   return (
@@ -32,29 +34,34 @@ function EventCardSkeleton() {
 export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [heroImage, setHeroImage] = useState('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=2070&auto=format&fit=crop');
 
   useEffect(() => {
-    async function fetchEvents() {
+    async function fetchData() {
       setIsLoading(true);
       try {
-        const data = await getEvents();
-        setEvents(data);
+        const [eventsData, heroImg] = await Promise.all([
+          getEvents(),
+          getSiteImage('events-hero')
+        ]);
+        setEvents(eventsData);
+        if (heroImg) setHeroImage(heroImg.url);
       } catch (error) {
-        console.error('Error fetching events:', error);
+        console.error('Error fetching data:', error);
         setEvents([]);
       } finally {
         setIsLoading(false);
       }
     }
-    fetchEvents();
+    fetchData();
   }, []);
 
   return (
     <div className="min-h-screen bg-surface">
       {/* Hero Section */}
       <section className="relative min-h-[50vh] md:min-h-[55vh] flex items-end overflow-hidden">
-        <Image 
-          src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=2070&auto=format&fit=crop"
+        <SafeImage 
+          src={heroImage}
           alt="Community Events"
           fill
           className="object-cover"

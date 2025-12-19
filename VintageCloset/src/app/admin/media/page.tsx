@@ -627,16 +627,18 @@ export default function MediaPage() {
           <div className="space-y-6">
             <div className="bg-surface/50 rounded-xl p-4 border border-hairline">
               <p className="text-sm text-muted">
-                <strong className="text-ink">Layout:</strong> Full-width hero background images at the top of each collection page 
-                (Women, Men, Unisex). Text overlays on top.
+                <strong className="text-ink">Layout:</strong> Full-width hero background images at the top of collection pages 
+                (Women, Men, Unisex) and content pages (Journal, Events). Text overlays on top.
               </p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
               {sectionImages.map(image => {
                 const positionMap: Record<string, string> = {
                   'women-hero': '/women page',
                   'men-hero': '/men page',
                   'unisex-hero': '/unisex page',
+                  'journal-hero': '/journal page',
+                  'events-hero': '/events page',
                 };
                 return (
                   <ImageCard 
