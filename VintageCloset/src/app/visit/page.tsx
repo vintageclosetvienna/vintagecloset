@@ -46,7 +46,7 @@ export default function VisitPage() {
                      </div>
                      <div>
                         <h3 className="font-bold text-ink mb-1">Contact</h3>
-                        <p className="text-muted">+43 681 10709980<br/>hello@vintagecloset.at</p>
+                        <p className="text-muted">+43 681 10709980<br/>vintageclosetvienna@gmail.com</p>
                      </div>
                   </div>
                </div>

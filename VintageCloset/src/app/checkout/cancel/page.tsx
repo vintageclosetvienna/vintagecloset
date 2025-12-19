@@ -56,8 +56,8 @@ export default function CheckoutCancelPage() {
         <Reveal delay={0.5}>
           <p className="text-xs text-muted mt-8">
             Having trouble? Contact us at{' '}
-            <a href="mailto:hello@vintagecloset.at" className="text-accent-start hover:underline">
-              hello@vintagecloset.at
+            <a href="mailto:vintageclosetvienna@gmail.com" className="text-accent-start hover:underline">
+              vintageclosetvienna@gmail.com
             </a>
           </p>
         </Reveal>
