@@ -15,3 +15,5 @@ CREATE INDEX IF NOT EXISTS idx_orders_discount_code ON orders(discount_code);
 COMMENT ON COLUMN orders.discount_code IS 'Discount code (Gutschein) used for this order';
 COMMENT ON COLUMN orders.discount_code_amount IS 'Amount discounted through discount code';
 
+
+

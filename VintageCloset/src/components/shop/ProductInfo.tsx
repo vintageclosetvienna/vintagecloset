@@ -9,22 +9,22 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/lib/cart';
 
-const SECTIONS = [
-  { 
-    title: 'Description', 
-    content: 'Rare vintage piece sourced from a private collection. Features iconic branding and heavyweight construction. A true piece of fashion history that tells a story.' 
-  },
-  { 
-    title: 'Measurements', 
-    content: 'Pit to pit: 60cm\nLength: 72cm\nShoulder: 52cm\nSleeve: 65cm\n\nModel is 180cm and wears size M.' 
-  },
-  { 
-    title: 'Condition & Care', 
-    content: 'Excellent vintage condition with no major flaws. Washed, steamed, and ready to wear.\n\nMachine wash cold, gentle cycle. Hang dry. Do not bleach.' 
-  }
-];
-
 export function ProductInfo({ product }: { product: Product }) {
+  // Dynamic sections based on product data
+  const SECTIONS = [
+    { 
+      title: 'Description', 
+      content: product.description || 'A unique vintage piece carefully selected for its quality and style. Each item has its own story and character.' 
+    },
+    { 
+      title: 'Measurements', 
+      content: 'Please contact us for detailed measurements.\n\nEach vintage item is unique and measurements may vary.' 
+    },
+    { 
+      title: 'Condition & Care', 
+      content: 'Excellent vintage condition with no major flaws. Washed, steamed, and ready to wear.\n\nMachine wash cold, gentle cycle. Hang dry. Do not bleach.' 
+    }
+  ];
   const [openSection, setOpenSection] = useState<string>('Description');
   const [addedToCart, setAddedToCart] = useState(false);
   const { addItem, items } = useCart();
