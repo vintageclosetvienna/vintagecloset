@@ -71,6 +71,7 @@ export default function ArchiveStoriesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [editingStory, setEditingStory] = useState<ArchiveStory | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [isSavingHeader, setIsSavingHeader] = useState(false);
   const [sectionSettings, setSectionSettings] = useState({
     header: 'Born from the',
     highlight: 'Archive.'
@@ -139,6 +140,35 @@ export default function ArchiveStoriesPage() {
     return icon ? icon.icon : MagnifyingGlass;
   };
 
+  const handleSaveHeader = async () => {
+    if (!isSupabaseConfigured()) return;
+    
+    setIsSavingHeader(true);
+    try {
+      // Update all stories with the new section header
+      const { error } = await supabase
+        .from('archive_stories')
+        .update({
+          section_header: sectionSettings.header,
+          section_header_highlight: sectionSettings.highlight,
+        } as never)
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Update all records
+
+      if (error) {
+        console.error('Error saving header:', error);
+        alert('Failed to save header');
+      } else {
+        alert('Header saved successfully!');
+        fetchStories();
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to save header');
+    } finally {
+      setIsSavingHeader(false);
+    }
+  };
+
   return (
     <div className="p-6 lg:p-8">
       {/* Header */}
@@ -158,7 +188,23 @@ export default function ArchiveStoriesPage() {
 
       {/* Section Header Settings */}
       <div className="bg-white rounded-xl border border-hairline p-6 mb-6">
-        <h2 className="text-sm font-bold uppercase tracking-wider text-muted mb-4">Section Header</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-muted">Section Header</h2>
+          <Button 
+            onClick={handleSaveHeader} 
+            disabled={isSavingHeader}
+            className="gap-2"
+          >
+            {isSavingHeader ? (
+              <>
+                <SpinnerGap size={16} className="animate-spin" />
+                Saving...
+              </>
+            ) : (
+              'Save Header'
+            )}
+          </Button>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormInput
             label="Header Line 1"

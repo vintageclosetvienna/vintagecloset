@@ -1,11 +1,34 @@
 'use client';
 
+import { useState } from 'react';
 import Image from 'next/image';
 import { Reveal } from '@/components/shared/Reveal';
 import { Button } from '@/components/ui/Button';
-import { MapPin, Clock, Phone } from '@phosphor-icons/react';
+import { MapPin, Clock, Phone, X } from '@phosphor-icons/react';
+
+const SHOPS = [
+  {
+    name: 'Spitalgasse',
+    address: 'Spitalgasse 13',
+    city: '1090 Wien, Austria',
+    mapsQuery: 'Spitalgasse+13,+1090+Wien'
+  },
+  {
+    name: 'Taborstraße',
+    address: 'Taborstraße 56',
+    city: '1020 Wien, Austria',
+    mapsQuery: 'Taborstraße+56,+1020+Wien'
+  }
+];
 
 export default function VisitPage() {
+  const [showLocationModal, setShowLocationModal] = useState(false);
+
+  const handleGetDirections = (mapsQuery: string) => {
+    window.open(`https://www.google.com/maps/search/?api=1&query=${mapsQuery}`, '_blank');
+    setShowLocationModal(false);
+  };
+
   return (
     <div className="min-h-screen bg-surface">
       <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[calc(100vh-var(--header-height))]">
@@ -25,8 +48,11 @@ export default function VisitPage() {
                         <MapPin size={24} weight="duotone" />
                      </div>
                      <div>
-                        <h3 className="font-bold text-ink mb-1">Address</h3>
-                        <p className="text-muted">Spitalgasse 13<br/>1090 Wien, Austria</p>
+                        <h3 className="font-bold text-ink mb-1">Locations</h3>
+                        <p className="text-muted">
+                          Spitalgasse 13, 1090 Wien<br/>
+                          Taborstraße 56, 1020 Wien
+                        </p>
                      </div>
                   </div>
 
@@ -52,9 +78,7 @@ export default function VisitPage() {
                </div>
 
                <div className="flex gap-4">
-                  <Button size="lg" asChild>
-                     <a href="https://www.google.com/maps/search/?api=1&query=Spitalgasse+13,+1090+Wien" target="_blank" rel="noopener noreferrer">Get Directions</a>
-                  </Button>
+                  <Button size="lg" onClick={() => setShowLocationModal(true)}>Get Directions</Button>
                   <Button variant="secondary" size="lg">Book Appointment</Button>
                </div>
             </Reveal>
@@ -72,6 +96,42 @@ export default function VisitPage() {
          </div>
 
       </div>
+
+      {/* Location Selection Modal */}
+      {showLocationModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 relative">
+            <button 
+              onClick={() => setShowLocationModal(false)}
+              className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <X size={20} />
+            </button>
+            
+            <h2 className="text-2xl font-display font-bold text-ink mb-2">Choose Location</h2>
+            <p className="text-muted text-sm mb-6">Select which store you&apos;d like directions to:</p>
+            
+            <div className="space-y-3">
+              {SHOPS.map((shop) => (
+                <button
+                  key={shop.name}
+                  onClick={() => handleGetDirections(shop.mapsQuery)}
+                  className="w-full p-4 border border-hairline rounded-lg hover:border-accent-start hover:bg-accent-start/5 transition-all text-left group"
+                >
+                  <div className="flex items-start gap-3">
+                    <MapPin size={20} weight="duotone" className="text-accent-start mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h3 className="font-bold text-ink group-hover:text-accent-start transition-colors">{shop.name}</h3>
+                      <p className="text-sm text-muted">{shop.address}</p>
+                      <p className="text-sm text-muted">{shop.city}</p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
