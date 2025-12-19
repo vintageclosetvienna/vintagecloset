@@ -242,6 +242,7 @@ function EditModal({ image, position, isCarousel, onClose, onSave, isSaving }: E
         {/* Content - Scrollable */}
         <div 
           className="p-6 space-y-6 overflow-y-auto flex-1"
+          onWheel={(e) => e.stopPropagation()}
           style={{
             scrollbarWidth: 'thin',
             scrollbarColor: 'rgba(0, 0, 0, 0.2) transparent',
@@ -389,15 +390,16 @@ function EditModal({ image, position, isCarousel, onClose, onSave, isSaving }: E
                     disabled={isSaving}
                   />
                   <div className="aspect-video flex items-center justify-center bg-gradient-to-br from-surface via-surface to-accent-start/5">
-                  <div className="text-center p-8">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white shadow-sm flex items-center justify-center">
-                      <CloudArrowUp size={32} weight="duotone" className="text-accent-start" />
+                    <div className="text-center p-8">
+                      <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white shadow-sm flex items-center justify-center">
+                        <CloudArrowUp size={32} weight="duotone" className="text-accent-start" />
+                      </div>
+                      <p className="text-sm font-medium text-ink">Drag & drop an image here</p>
+                      <p className="text-xs text-muted mt-1">or click to browse files</p>
+                      <p className="text-[10px] text-muted/60 mt-3">PNG, JPG, WEBP up to 10MB</p>
                     </div>
-                    <p className="text-sm font-medium text-ink">Drag & drop an image here</p>
-                    <p className="text-xs text-muted mt-1">or click to browse files</p>
-                    <p className="text-[10px] text-muted/60 mt-3">PNG, JPG, WEBP up to 10MB</p>
                   </div>
-                </div>
+                </>
               )}
             </div>
           </div>

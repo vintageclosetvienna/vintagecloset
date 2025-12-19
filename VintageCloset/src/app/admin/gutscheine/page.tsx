@@ -462,6 +462,7 @@ export default function GutscheinePage() {
             {/* Form */}
             <div 
               className="p-6 space-y-6 overflow-y-auto flex-1"
+              onWheel={(e) => e.stopPropagation()}
               style={{
                 scrollbarWidth: 'thin',
                 scrollbarColor: 'rgba(0, 0, 0, 0.2) transparent',

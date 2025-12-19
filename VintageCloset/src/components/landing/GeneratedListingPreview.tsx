@@ -5,7 +5,15 @@ import { Reveal } from '@/components/shared/Reveal';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { CheckCircle, MagnifyingGlass, Eye, Heart, Star } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getStorySlidesImages, type SiteImage } from '@/lib/site-images';
+import { getActiveArchiveStories, getSectionHeader } from '@/lib/archive-stories';
+
+// Icon mapping
+const ICON_MAP: Record<string, typeof MagnifyingGlass> = {
+  MagnifyingGlass,
+  Eye,
+  Heart,
+  Star,
+};
 
 // Fallback story data with default images
 const FALLBACK_STORY_SLIDES = [
@@ -53,25 +61,51 @@ const FALLBACK_STORY_SLIDES = [
 export function GeneratedListingPreview() {
   const [currentImage, setCurrentImage] = useState(0);
   const [storySlides, setStorySlides] = useState(FALLBACK_STORY_SLIDES);
+  const [sectionHeader, setSectionHeader] = useState({ header: 'Born from the', highlight: 'Archive.' });
 
   useEffect(() => {
-    async function fetchImages() {
+    async function fetchStories() {
       try {
-        const images = await getStorySlidesImages();
-        if (images.length > 0) {
-          // Update story slides with fetched images
-          const updatedSlides = FALLBACK_STORY_SLIDES.map((slide, idx) => ({
-            ...slide,
-            image: images[idx]?.url || slide.image,
-            title: images[idx]?.description || slide.title,
+        const stories = await getActiveArchiveStories();
+        const header = await getSectionHeader();
+        
+        if (stories.length > 0) {
+          // Map database stories to component format
+          const formattedStories = stories.map(story => ({
+            image: story.image_url,
+            title: story.title,
+            location: story.location,
+            tags: story.tags,
+            story: story.story_text,
+            highlights: [
+              {
+                icon: ICON_MAP[story.highlight_1_icon] || MagnifyingGlass,
+                title: story.highlight_1_title,
+                desc: story.highlight_1_description,
+              },
+              {
+                icon: ICON_MAP[story.highlight_2_icon] || Eye,
+                title: story.highlight_2_title,
+                desc: story.highlight_2_description,
+              },
+              {
+                icon: ICON_MAP[story.highlight_3_icon] || Heart,
+                title: story.highlight_3_title,
+                desc: story.highlight_3_description,
+              },
+            ],
           }));
-          setStorySlides(updatedSlides);
+          setStorySlides(formattedStories);
+        }
+        
+        if (header) {
+          setSectionHeader(header);
         }
       } catch (error) {
-        console.error('Error fetching story slide images:', error);
+        console.error('Error fetching archive stories:', error);
       }
     }
-    fetchImages();
+    fetchStories();
   }, []);
 
   useEffect(() => {
@@ -152,8 +186,8 @@ export function GeneratedListingPreview() {
           <div className="order-2 lg:order-2 space-y-8">
             <Reveal>
               <h2 className="font-display font-bold text-3xl md:text-4xl lg:text-5xl leading-[1.1]">
-                Born from the<br />
-                <span className="text-gradient">Archive.</span>
+                {sectionHeader.header}<br />
+                <span className="text-gradient">{sectionHeader.highlight}</span>
               </h2>
             </Reveal>
             

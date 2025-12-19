@@ -222,6 +222,7 @@ function EditProductModal({
           {/* Content - Scrollable */}
           <div 
             className="p-6 space-y-6 flex-1 min-h-0 overflow-y-auto"
+            onWheel={(e) => e.stopPropagation()}
             style={{ 
               scrollbarWidth: 'thin',
               scrollbarColor: 'rgba(0, 0, 0, 0.2) transparent',
