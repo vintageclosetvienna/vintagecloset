@@ -52,7 +52,9 @@ export default function VisitPage() {
                </div>
 
                <div className="flex gap-4">
-                  <Button size="lg">Get Directions</Button>
+                  <Button size="lg" asChild>
+                     <a href="https://www.google.com/maps/search/?api=1&query=Spitalgasse+13,+1090+Wien" target="_blank" rel="noopener noreferrer">Get Directions</a>
+                  </Button>
                   <Button variant="secondary" size="lg">Book Appointment</Button>
                </div>
             </Reveal>
