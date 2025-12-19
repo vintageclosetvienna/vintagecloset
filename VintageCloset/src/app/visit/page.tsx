@@ -26,7 +26,7 @@ export default function VisitPage() {
                      </div>
                      <div>
                         <h3 className="font-bold text-ink mb-1">Address</h3>
-                        <p className="text-muted">Zieglergasse 34<br/>1070 Vienna, Austria</p>
+                        <p className="text-muted">Spitalgasse 13<br/>1090 Wien, Austria</p>
                      </div>
                   </div>
 
@@ -36,7 +36,7 @@ export default function VisitPage() {
                      </div>
                      <div>
                         <h3 className="font-bold text-ink mb-1">Opening Hours</h3>
-                        <p className="text-muted">Mon - Fri: 11:00 - 19:00<br/>Sat: 10:00 - 18:00</p>
+                        <p className="text-muted">Mon - Fri: 11:00 - 19:00<br/>Sat: 10:00 - 18:00<br/>Sun: Closed</p>
                      </div>
                   </div>
 
@@ -46,7 +46,7 @@ export default function VisitPage() {
                      </div>
                      <div>
                         <h3 className="font-bold text-ink mb-1">Contact</h3>
-                        <p className="text-muted">+43 1 234 5678<br/>hello@vintagecloset.at</p>
+                        <p className="text-muted">+43 681 10709980<br/>hello@vintagecloset.at</p>
                      </div>
                   </div>
                </div>
