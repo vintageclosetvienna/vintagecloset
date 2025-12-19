@@ -58,7 +58,7 @@ export function Footer() {
             <div className="flex items-center space-x-4 pt-2">
               <a href="https://www.instagram.com/vintage_closet_vienna" target="_blank" rel="noopener noreferrer" className="text-muted hover:text-accent-start transition-colors"><InstagramLogo size={20} /></a>
               <a href="https://www.tiktok.com/@vintage_closet_vienna" target="_blank" rel="noopener noreferrer" className="text-muted hover:text-accent-start transition-colors"><TiktokLogo size={20} /></a>
-              <a href="https://www.facebook.com/VintageCloset" target="_blank" rel="noopener noreferrer" className="text-muted hover:text-accent-start transition-colors"><FacebookLogo size={20} /></a>
+              <a href="https://www.facebook.com/profile.php?id=61567529122786" target="_blank" rel="noopener noreferrer" className="text-muted hover:text-accent-start transition-colors"><FacebookLogo size={20} /></a>
             </div>
           </div>
         </div>
