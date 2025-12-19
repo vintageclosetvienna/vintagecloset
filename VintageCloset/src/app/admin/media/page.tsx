@@ -124,7 +124,7 @@ interface EditModalProps {
   position?: string;
   isCarousel?: boolean;
   onClose: () => void;
-  onSave: (data: { url: string; description?: string; file?: File }) => Promise<void>;
+  onSave: (data: { url: string; description?: string; file?: File; objectPosition?: string }) => Promise<void>;
   isSaving: boolean;
 }
 
@@ -133,6 +133,19 @@ function EditModal({ image, position, isCarousel, onClose, onSave, isSaving }: E
   const [category, setCategory] = useState(image.description);
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [objectPosition, setObjectPosition] = useState(image.object_position || 'center center');
+  const [isDraggingImage, setIsDraggingImage] = useState(false);
+  const [imagePosition, setImagePosition] = useState({ x: 50, y: 50 });
+
+  // Parse initial position
+  useEffect(() => {
+    if (image.object_position) {
+      const parts = image.object_position.split(' ');
+      const x = parseFloat(parts[0]) || 50;
+      const y = parseFloat(parts[1]) || 50;
+      setImagePosition({ x, y });
+    }
+  }, [image.object_position]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -168,12 +181,47 @@ function EditModal({ image, position, isCarousel, onClose, onSave, isSaving }: E
   }, []);
 
   const handleSave = async () => {
+    const finalObjectPosition = `${imagePosition.x}% ${imagePosition.y}%`;
     await onSave({ 
       url: newUrl, 
       description: isCarousel ? category : undefined,
-      file: selectedFile || undefined
+      file: selectedFile || undefined,
+      objectPosition: finalObjectPosition
     });
   };
+
+  // Handle dragging the image to reposition
+  const handleImageDragStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingImage(true);
+  }, []);
+
+  const handleImageDragMove = useCallback((e: React.MouseEvent) => {
+    if (!isDraggingImage) return;
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    
+    setImagePosition({
+      x: Math.max(0, Math.min(100, x)),
+      y: Math.max(0, Math.min(100, y))
+    });
+  }, [isDraggingImage]);
+
+  const handleImageDragEnd = useCallback(() => {
+    setIsDraggingImage(false);
+  }, []);
+
+  // Global mouse up listener
+  useEffect(() => {
+    const handleGlobalMouseUp = () => setIsDraggingImage(false);
+    if (isDraggingImage) {
+      window.addEventListener('mouseup', handleGlobalMouseUp);
+      return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+    }
+  }, [isDraggingImage]);
 
   return (
     <div className="fixed inset-0 bg-ink/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-hidden">
@@ -234,23 +282,63 @@ function EditModal({ image, position, isCarousel, onClose, onSave, isSaving }: E
               
               {newUrl && newUrl.length > 0 ? (
                 <div className="relative aspect-video">
-                  <Image 
-                    src={newUrl} 
-                    alt="Preview" 
-                    fill 
-                    className="object-cover"
-                    unoptimized={newUrl.startsWith('blob:')}
-                  />
-                  <div className="absolute inset-0 bg-ink/0 hover:bg-ink/40 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
-                    <div className="bg-white rounded-lg px-4 py-2 shadow-lg">
-                      <p className="text-sm font-medium text-ink">Click or drag to replace</p>
+                  <div 
+                    className="relative w-full h-full overflow-hidden bg-gray-100 cursor-move"
+                    onMouseDown={handleImageDragStart}
+                    onMouseMove={handleImageDragMove}
+                    onMouseUp={handleImageDragEnd}
+                    onMouseLeave={handleImageDragEnd}
+                  >
+                    <Image 
+                      src={newUrl} 
+                      alt="Preview" 
+                      fill 
+                      className="object-cover pointer-events-none select-none"
+                      style={{ 
+                        objectPosition: `${imagePosition.x}% ${imagePosition.y}%`,
+                        transition: isDraggingImage ? 'none' : 'object-position 0.1s ease-out'
+                      }}
+                      unoptimized={newUrl.startsWith('blob:')}
+                    />
+                    {/* Crosshair indicator */}
+                    <div 
+                      className="absolute pointer-events-none transition-all"
+                      style={{
+                        left: `${imagePosition.x}%`,
+                        top: `${imagePosition.y}%`,
+                        transform: 'translate(-50%, -50%)',
+                        opacity: isDraggingImage ? 1 : 0
+                      }}
+                    >
+                      <div className="relative">
+                        <div className="absolute w-8 h-0.5 bg-white shadow-lg" style={{ left: '-16px', top: '0' }} />
+                        <div className="absolute w-0.5 h-8 bg-white shadow-lg" style={{ left: '0', top: '-16px' }} />
+                        <div className="w-3 h-3 border-2 border-white rounded-full bg-accent-start shadow-lg" />
+                      </div>
+                    </div>
+                    {/* Drag instruction overlay */}
+                    <div className="absolute inset-0 bg-ink/0 hover:bg-ink/20 transition-colors flex items-center justify-center">
+                      {!isDraggingImage && (
+                        <div className="bg-white/90 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                          <p className="text-sm font-medium text-ink">Drag to reposition</p>
+                          <p className="text-xs text-muted mt-0.5">Position: {imagePosition.x.toFixed(0)}%, {imagePosition.y.toFixed(0)}%</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                   {selectedFile && (
-                    <div className="absolute bottom-3 left-3 right-3">
+                    <div className="absolute bottom-3 left-3 right-3 z-10">
                       <div className="bg-green-500 text-white text-xs font-medium px-3 py-1.5 rounded-lg inline-flex items-center gap-2">
                         <Check size={12} weight="bold" />
                         New image selected - click Save to upload
+                      </div>
+                    </div>
+                  )}
+                  {!selectedFile && (
+                    <div className="absolute top-3 left-3 right-3 z-10">
+                      <div className="bg-accent-start/90 backdrop-blur-sm text-white text-xs font-medium px-3 py-1.5 rounded-lg inline-flex items-center gap-2">
+                        <CloudArrowUp size={14} weight="bold" />
+                        Drag image to adjust focal point • Click to replace
                       </div>
                     </div>
                   )}
@@ -331,7 +419,7 @@ export default function MediaPage() {
     fetchImages();
   }, []);
 
-  const handleSave = async (data: { url: string; description?: string; file?: File }) => {
+  const handleSave = async (data: { url: string; description?: string; file?: File; objectPosition?: string }) => {
     if (!editingImage) return;
     
     setIsSaving(true);
@@ -353,12 +441,15 @@ export default function MediaPage() {
       }
       
       // Update the database
-      const updateData: { url?: string; description?: string } = {};
+      const updateData: { url?: string; description?: string; objectPosition?: string } = {};
       if (newUrl !== editingImage.image.url) {
         updateData.url = newUrl;
       }
       if (data.description !== undefined && data.description !== editingImage.image.description) {
         updateData.description = data.description;
+      }
+      if (data.objectPosition !== undefined && data.objectPosition !== editingImage.image.object_position) {
+        updateData.objectPosition = data.objectPosition;
       }
       
       if (Object.keys(updateData).length > 0) {
@@ -367,7 +458,7 @@ export default function MediaPage() {
         // Update local state
         setImages(prev => prev.map(img => 
           img.key === editingImage.image.key 
-            ? { ...img, ...updateData }
+            ? { ...img, ...updateData, object_position: data.objectPosition }
             : img
         ));
       }

@@ -82,7 +82,11 @@ export function MediaCarousel() {
     );
   }
 
-  const mediaItems = carouselImages.map(img => ({ src: img.url, label: img.description }));
+  const mediaItems = carouselImages.map(img => ({ 
+    src: img.url, 
+    label: img.description,
+    object_position: img.object_position || 'center center'
+  }));
   
   // Duplicate items for seamless loop
   const items = [...mediaItems, ...mediaItems];
@@ -127,6 +131,7 @@ export function MediaCarousel() {
                      alt={item.label || 'Carousel image'} 
                      fill 
                      className="object-cover transition-transform duration-700 group-hover:scale-105 relative z-10" 
+                     style={{ objectPosition: item.object_position || 'center center' }}
                    />
                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-60 z-20 pointer-events-none" />
                    

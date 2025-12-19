@@ -13,7 +13,7 @@ import {
   List,
   X,
   ArrowSquareOut,
-  Sparkles
+  Sparkle
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Logo } from '@/components/ui/Logo';
@@ -25,7 +25,7 @@ const NAV_ITEMS = [
   { href: '/admin/gutscheine', label: 'Gutscheine', icon: Ticket },
   { href: '/admin/journal', label: 'Journal', icon: Notebook },
   { href: '/admin/events', label: 'Events', icon: CalendarBlank },
-  { href: '/admin/archive', label: 'Archive Stories', icon: Sparkles },
+  { href: '/admin/archive', label: 'Archive Stories', icon: Sparkle },
   { href: '/admin/media', label: 'Site Images', icon: Images },
 ];
 

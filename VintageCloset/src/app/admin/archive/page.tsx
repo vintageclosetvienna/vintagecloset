@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { 
-  Sparkles,
+  Sparkle,
   PencilSimple, 
   Trash,
   Plus,
@@ -144,7 +144,7 @@ export default function ArchiveStoriesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-display font-bold text-ink flex items-center gap-2">
-            <Sparkles size={28} weight="fill" className="text-accent-start" />
+            <Sparkle size={28} weight="fill" className="text-accent-start" />
             Born from the Archive
           </h1>
           <p className="text-muted mt-1">Manage slideshow stories and section content</p>
@@ -186,7 +186,7 @@ export default function ArchiveStoriesPage() {
         </div>
       ) : stories.length === 0 ? (
         <div className="bg-white rounded-xl border border-hairline p-12 text-center">
-          <Sparkles size={48} weight="thin" className="text-muted mx-auto mb-4" />
+          <Sparkle size={48} weight="thin" className="text-muted mx-auto mb-4" />
           <p className="text-muted">No stories yet. Create your first one!</p>
         </div>
       ) : (

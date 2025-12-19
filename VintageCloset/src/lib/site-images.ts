@@ -11,6 +11,7 @@ export interface DbSiteImage {
   label: string;
   description: string | null;
   url: string;
+  object_position?: string | null;
   sort_order: number;
   is_active: boolean;
   created_at: string;
@@ -26,6 +27,7 @@ export interface SiteImage {
   url: string;
   section: string;
   sortOrder: number;
+  object_position?: string;
 }
 
 export interface SiteImagesConfig {
@@ -58,6 +60,7 @@ function dbToSiteImage(db: DbSiteImage): SiteImage {
     url: db.url,
     section: db.section,
     sortOrder: db.sort_order,
+    object_position: db.object_position || 'center center',
   };
 }
 
@@ -155,7 +158,7 @@ export async function getAllSiteImagesAdmin(): Promise<SiteImage[]> {
 // Update site image URL and description
 export async function updateSiteImage(
   key: string,
-  data: { url?: string; description?: string }
+  data: { url?: string; description?: string; objectPosition?: string }
 ): Promise<SiteImage | null> {
   if (!isSupabaseConfigured()) {
     console.error('Supabase not configured, cannot update site image.');
@@ -165,6 +168,7 @@ export async function updateSiteImage(
   const updateData: Partial<DbSiteImage> = {};
   if (data.url) updateData.url = data.url;
   if (data.description !== undefined) updateData.description = data.description;
+  if (data.objectPosition !== undefined) updateData.object_position = data.objectPosition;
 
   const { data: updated, error } = await supabase
     .from('site_images')
