@@ -11,21 +11,21 @@ const SHOPS = [
     name: 'Spitalgasse',
     address: 'Spitalgasse 13',
     city: '1090 Wien, Austria',
-    mapsQuery: 'Spitalgasse+13,+1090+Wien'
+    mapsUrl: 'https://www.google.com/maps/place/Vintage+closet+1090/@48.2168996,16.3510508,17z/data=!3m1!5s0x476d07c11fad15f5:0xcfd8600dc7f637aa!4m6!3m5!1s0x476d07001dcad353:0x81ddaa4a935620a6!8m2!3d48.2169518!4d16.3511499!16s%2Fg%2F11v_89tdjh?entry=ttu&g_ep=EgoyMDI1MTIwOS4wIKXMDSoASAFQAw%3D%3D'
   },
   {
     name: 'Taborstraße',
     address: 'Taborstraße 56',
     city: '1020 Wien, Austria',
-    mapsQuery: 'Taborstraße+56,+1020+Wien'
+    mapsUrl: 'https://www.google.com/maps/place/Vintage+Closet+1020/@48.2210385,16.3791008,17z/data=!3m1!4b1!4m6!3m5!1s0x476d07fdb8751e41:0xd7b93878f3214d2a!8m2!3d48.221035!4d16.3816757!16s%2Fg%2F11vkgltttq?entry=ttu&g_ep=EgoyMDI1MTIwOS4wIKXMDSoASAFQAw%3D%3D'
   }
 ];
 
 export default function VisitPage() {
   const [showLocationModal, setShowLocationModal] = useState(false);
 
-  const handleGetDirections = (mapsQuery: string) => {
-    window.open(`https://www.google.com/maps/search/?api=1&query=${mapsQuery}`, '_blank');
+  const handleGetDirections = (mapsUrl: string) => {
+    window.open(mapsUrl, '_blank');
     setShowLocationModal(false);
   };
 
@@ -115,7 +115,7 @@ export default function VisitPage() {
               {SHOPS.map((shop) => (
                 <button
                   key={shop.name}
-                  onClick={() => handleGetDirections(shop.mapsQuery)}
+                  onClick={() => handleGetDirections(shop.mapsUrl)}
                   className="w-full p-4 border border-hairline rounded-lg hover:border-accent-start hover:bg-accent-start/5 transition-all text-left group"
                 >
                   <div className="flex items-start gap-3">
