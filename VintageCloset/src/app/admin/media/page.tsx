@@ -501,10 +501,15 @@ export default function MediaPage() {
       if (Object.keys(updateData).length > 0) {
         await updateSiteImage(editingImage.image.key, updateData);
         
-        // Update local state
+        // Update local state with the correct field name
+        const localUpdate: Partial<SiteImage> = {};
+        if (updateData.url) localUpdate.url = updateData.url;
+        if (updateData.description !== undefined) localUpdate.description = updateData.description;
+        if (updateData.objectPosition) localUpdate.object_position = updateData.objectPosition;
+        
         setImages(prev => prev.map(img => 
           img.key === editingImage.image.key 
-            ? { ...img, ...updateData, object_position: data.objectPosition }
+            ? { ...img, ...localUpdate }
             : img
         ));
       }
