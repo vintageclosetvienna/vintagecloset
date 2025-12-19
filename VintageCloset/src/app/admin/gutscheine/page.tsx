@@ -460,7 +460,28 @@ export default function GutscheinePage() {
             </div>
 
             {/* Form */}
-            <div className="p-6 space-y-6 overflow-y-auto flex-1 overscroll-contain">
+            <div 
+              className="p-6 space-y-6 overflow-y-auto flex-1"
+              style={{
+                scrollbarWidth: 'thin',
+                scrollbarColor: 'rgba(0, 0, 0, 0.2) transparent',
+              }}
+            >
+              <style jsx>{`
+                div::-webkit-scrollbar {
+                  width: 6px;
+                }
+                div::-webkit-scrollbar-track {
+                  background: transparent;
+                }
+                div::-webkit-scrollbar-thumb {
+                  background-color: rgba(0, 0, 0, 0.2);
+                  border-radius: 3px;
+                }
+                div::-webkit-scrollbar-thumb:hover {
+                  background-color: rgba(0, 0, 0, 0.3);
+                }
+              `}</style>
               {/* Error */}
               {error && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">

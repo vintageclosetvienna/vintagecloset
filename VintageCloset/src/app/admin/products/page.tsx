@@ -221,12 +221,27 @@ function EditProductModal({
 
           {/* Content - Scrollable */}
           <div 
-            className="p-6 space-y-6 flex-1 min-h-0"
+            className="p-6 space-y-6 flex-1 min-h-0 overflow-y-auto"
             style={{ 
-              overflowY: 'auto',
-              overscrollBehavior: 'contain',
+              scrollbarWidth: 'thin',
+              scrollbarColor: 'rgba(0, 0, 0, 0.2) transparent',
             }}
           >
+          <style jsx>{`
+            div::-webkit-scrollbar {
+              width: 6px;
+            }
+            div::-webkit-scrollbar-track {
+              background: transparent;
+            }
+            div::-webkit-scrollbar-thumb {
+              background-color: rgba(0, 0, 0, 0.2);
+              border-radius: 3px;
+            }
+            div::-webkit-scrollbar-thumb:hover {
+              background-color: rgba(0, 0, 0, 0.3);
+            }
+          `}</style>
           {/* Images */}
           <ImageUpload
             label="Product Images"

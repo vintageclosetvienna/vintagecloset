@@ -394,8 +394,8 @@ function StoryModal({
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-ink/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-hidden">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-ink/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-hairline flex-shrink-0">
           <div>
@@ -410,7 +410,28 @@ function StoryModal({
         </div>
 
         {/* Content - Scrollable */}
-        <div className="p-6 space-y-8 overflow-y-auto flex-1 overscroll-contain">
+        <div 
+          className="p-6 space-y-8 flex-1 overflow-y-auto"
+          style={{
+            scrollbarWidth: 'thin',
+            scrollbarColor: 'rgba(0, 0, 0, 0.2) transparent',
+          }}
+        >
+          <style jsx>{`
+            div::-webkit-scrollbar {
+              width: 6px;
+            }
+            div::-webkit-scrollbar-track {
+              background: transparent;
+            }
+            div::-webkit-scrollbar-thumb {
+              background-color: rgba(0, 0, 0, 0.2);
+              border-radius: 3px;
+            }
+            div::-webkit-scrollbar-thumb:hover {
+              background-color: rgba(0, 0, 0, 0.3);
+            }
+          `}</style>
           {/* Image */}
           <div>
             <h3 className="text-sm font-bold uppercase tracking-wider text-muted mb-4">Image</h3>

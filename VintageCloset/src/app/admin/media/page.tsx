@@ -240,7 +240,28 @@ function EditModal({ image, position, isCarousel, onClose, onSave, isSaving }: E
         </div>
 
         {/* Content - Scrollable */}
-        <div className="p-6 space-y-6 overflow-y-auto flex-1 overscroll-contain">
+        <div 
+          className="p-6 space-y-6 overflow-y-auto flex-1"
+          style={{
+            scrollbarWidth: 'thin',
+            scrollbarColor: 'rgba(0, 0, 0, 0.2) transparent',
+          }}
+        >
+          <style jsx>{`
+            div::-webkit-scrollbar {
+              width: 6px;
+            }
+            div::-webkit-scrollbar-track {
+              background: transparent;
+            }
+            div::-webkit-scrollbar-thumb {
+              background-color: rgba(0, 0, 0, 0.2);
+              border-radius: 3px;
+            }
+            div::-webkit-scrollbar-thumb:hover {
+              background-color: rgba(0, 0, 0, 0.3);
+            }
+          `}</style>
           {/* Category Name - Only for carousel */}
           {isCarousel && (
             <div>
