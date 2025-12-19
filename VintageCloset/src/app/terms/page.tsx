@@ -177,7 +177,7 @@ export default function TermsPage() {
 
             <div className="mt-12 pt-8 border-t border-hairline text-sm text-muted">
               <p>Letzte Aktualisierung: {new Date().toLocaleDateString('de-DE')}</p>
-              <p className="mt-2">Bei Fragen zu unseren Geschäftsbedingungen kontaktieren Sie uns bitte unter vintageclosetvienna@gmail.com</p>
+              <p className="mt-2">Bei Fragen zu unseren Geschäftsbedingungen kontaktieren Sie uns bitte unter vintage.closet.vienna@gmail.com</p>
             </div>
           </div>
         </div>
