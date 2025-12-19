@@ -1,31 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Minus, Heart, ShoppingBag, CreditCard, Check } from '@phosphor-icons/react';
+import { Heart, ShoppingBag, CreditCard, Check } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/Button';
-import { AnimatePresence, motion } from 'framer-motion';
 import { Product, getDiscountedPrice } from '@/lib/data';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/lib/cart';
 
 export function ProductInfo({ product }: { product: Product }) {
-  // Dynamic sections based on product data
-  const SECTIONS = [
-    { 
-      title: 'Description', 
-      content: product.description || 'A unique vintage piece carefully selected for its quality and style. Each item has its own story and character.' 
-    },
-    { 
-      title: 'Measurements', 
-      content: 'Please contact us for detailed measurements.\n\nEach vintage item is unique and measurements may vary.' 
-    },
-    { 
-      title: 'Condition & Care', 
-      content: 'Excellent vintage condition with no major flaws. Washed, steamed, and ready to wear.\n\nMachine wash cold, gentle cycle. Hang dry. Do not bleach.' 
-    }
-  ];
-  const [openSection, setOpenSection] = useState<string>('Description');
   const [addedToCart, setAddedToCart] = useState(false);
   const { addItem, items } = useCart();
   const router = useRouter();
@@ -152,34 +135,12 @@ export function ProductInfo({ product }: { product: Product }) {
           </div>
        </div>
 
-       {/* Accordion */}
-       <div className="space-y-2">
-          {SECTIONS.map(section => (
-             <div key={section.title} className="border-b border-hairline last:border-none">
-                <button
-                   onClick={() => setOpenSection(openSection === section.title ? '' : section.title)}
-                   className="flex items-center justify-between w-full py-4 text-left group"
-                >
-                   <span className="font-bold text-ink group-hover:text-accent-start transition-colors">{section.title}</span>
-                   <div className="p-1 rounded-full bg-gray-100 group-hover:bg-accent-start/10 transition-colors">
-                      {openSection === section.title ? <Minus size={14} className="text-accent-start" /> : <Plus size={14} />}
-                   </div>
-                </button>
-                <AnimatePresence>
-                   {openSection === section.title && (
-                      <motion.div
-                         initial={{ height: 0, opacity: 0 }}
-                         animate={{ height: 'auto', opacity: 1 }}
-                         exit={{ height: 0, opacity: 0 }}
-                         transition={{ duration: 0.3 }}
-                         className="overflow-hidden"
-                      >
-                         <p className="pb-6 text-muted text-base leading-relaxed whitespace-pre-line">{section.content}</p>
-                      </motion.div>
-                   )}
-                </AnimatePresence>
-             </div>
-          ))}
+       {/* Description */}
+       <div className="space-y-3">
+          <h3 className="font-bold text-ink text-lg">Description</h3>
+          <p className="text-muted text-base leading-relaxed">
+            {product.description || 'A unique vintage piece carefully selected for its quality and style. Each item has its own story and character.'}
+          </p>
        </div>
 
        {/* Store Info */}
