@@ -22,13 +22,12 @@ import {
   type SiteImage 
 } from '@/lib/site-images';
 
-type Section = 'landing-hero' | 'carousel' | 'collection-highlights' | 'story-slides' | 'collection-heroes';
+type Section = 'landing-hero' | 'carousel' | 'collection-highlights' | 'collection-heroes';
 
 const SECTIONS: { id: Section; dbSection: string; label: string; icon: typeof House; description: string }[] = [
   { id: 'landing-hero', dbSection: 'landing-hero', label: 'Landing Hero', icon: House, description: '3 stacked images on the homepage hero' },
   { id: 'carousel', dbSection: 'media-carousel', label: 'Media Carousel', icon: Images, description: 'Scrolling images below the hero' },
   { id: 'collection-highlights', dbSection: 'collection-highlights', label: 'Collection Cards', icon: Storefront, description: 'Women, Men, Unisex cards on landing' },
-  { id: 'story-slides', dbSection: 'story-slides', label: 'Archive Stories', icon: ImageIcon, description: '"Born from the Archive" slideshow' },
   { id: 'collection-heroes', dbSection: 'collection-heroes', label: 'Collection Heroes', icon: Storefront, description: 'Hero images for shop pages' },
 ];
 
@@ -37,7 +36,6 @@ const sectionToDbSection: Record<Section, string> = {
   'landing-hero': 'landing-hero',
   'carousel': 'media-carousel',
   'collection-highlights': 'collection-highlights',
-  'story-slides': 'story-slides',
   'collection-heroes': 'collection-heroes',
 };
 
@@ -620,29 +618,6 @@ export default function MediaPage() {
                   />
                 );
               })}
-            </div>
-          </div>
-        );
-
-      case 'story-slides':
-        return (
-          <div className="space-y-6">
-            <div className="bg-surface/50 rounded-xl p-4 border border-hairline">
-              <p className="text-sm text-muted">
-                <strong className="text-ink">Layout:</strong> "Born from the Archive" section. Images auto-rotate every 5 seconds 
-                with a slide animation. Each has a title and story text.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {sectionImages.map((image, idx) => (
-                <ImageCard 
-                  key={image.key}
-                  image={image} 
-                  position={`Story ${idx + 1}`}
-                  onEdit={() => setEditingImage({ image, position: `Story ${idx + 1}` })}
-                  isLoading={savingImageKey === image.key}
-                />
-              ))}
             </div>
           </div>
         );
