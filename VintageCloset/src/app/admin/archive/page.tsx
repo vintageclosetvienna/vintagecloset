@@ -95,11 +95,12 @@ export default function ArchiveStoriesPage() {
       console.error('Error fetching stories:', error);
       setStories([]);
     } else {
-      setStories(data || []);
-      if (data && data.length > 0) {
+      const typedData = data as ArchiveStory[];
+      setStories(typedData || []);
+      if (typedData && typedData.length > 0) {
         setSectionSettings({
-          header: data[0].section_header,
-          highlight: data[0].section_header_highlight,
+          header: typedData[0].section_header,
+          highlight: typedData[0].section_header_highlight,
         });
       }
     }
