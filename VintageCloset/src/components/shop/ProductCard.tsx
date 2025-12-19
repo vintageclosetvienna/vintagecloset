@@ -142,6 +142,18 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 
           {/* Overlay Gradient */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          
+          {/* SOLD Overlay */}
+          {product.isSold && (
+            <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex items-center justify-center z-30">
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-red-500 to-red-600 shadow-xl mb-3">
+                  <span className="text-white font-bold text-2xl tracking-wider">SOLD</span>
+                </div>
+                <p className="text-sm text-muted">This item has been sold</p>
+              </div>
+            </div>
+          )}
         </Link>
 
         {/* Navigation Dots/Arrows */}

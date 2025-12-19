@@ -81,38 +81,49 @@ export function ProductInfo({ product }: { product: Product }) {
 
        {/* Actions */}
        <div className="space-y-3">
-          <Button 
-            size="lg" 
-            className={`w-full h-14 text-base font-bold shadow-sm hover:shadow-lg ${isInCart || addedToCart ? 'bg-green-600 hover:bg-green-700' : ''}`}
-            onClick={handleAddToCart}
-            disabled={isInCart}
-          >
-             {isInCart || addedToCart ? (
-               <>
-                 <Check className="mr-2" size={20} weight="bold" />
-                 Added to Bag
-               </>
-             ) : (
-               <>
-                 <ShoppingBag className="mr-2" size={20} weight="bold" />
-                 Add to Bag
-               </>
-             )}
-          </Button>
-          <div className="grid grid-cols-2 gap-3">
-             <Button 
-                variant="secondary" 
+          {product.isSold ? (
+            <div className="w-full h-14 rounded-xl bg-red-50 border-2 border-red-200 flex items-center justify-center">
+              <div className="text-center">
+                <p className="text-red-700 font-bold text-lg">SOLD OUT</p>
+                <p className="text-red-600 text-xs mt-0.5">This item has been sold</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <Button 
                 size="lg" 
-                className="w-full h-12 text-sm font-bold"
-                onClick={handleBuyNow}
-             >
-                <CreditCard className="mr-2" size={18} weight="bold" />
-                Buy Now
-             </Button>
-             <Button variant="ghost" size="lg" className="h-12 border border-hairline hover:border-accent-start">
-                <Heart size={20} weight="bold" />
-             </Button>
-          </div>
+                className={`w-full h-14 text-base font-bold shadow-sm hover:shadow-lg ${isInCart || addedToCart ? 'bg-green-600 hover:bg-green-700' : ''}`}
+                onClick={handleAddToCart}
+                disabled={isInCart}
+              >
+                 {isInCart || addedToCart ? (
+                   <>
+                     <Check className="mr-2" size={20} weight="bold" />
+                     Added to Bag
+                   </>
+                 ) : (
+                   <>
+                     <ShoppingBag className="mr-2" size={20} weight="bold" />
+                     Add to Bag
+                   </>
+                 )}
+              </Button>
+              <div className="grid grid-cols-2 gap-3">
+                 <Button 
+                    variant="secondary" 
+                    size="lg" 
+                    className="w-full h-12 text-sm font-bold"
+                    onClick={handleBuyNow}
+                 >
+                    <CreditCard className="mr-2" size={18} weight="bold" />
+                    Buy Now
+                 </Button>
+                 <Button variant="ghost" size="lg" className="h-12 border border-hairline hover:border-accent-start">
+                    <Heart size={20} weight="bold" />
+                 </Button>
+              </div>
+            </>
+          )}
        </div>
 
        {/* Details Grid */}
