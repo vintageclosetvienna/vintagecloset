@@ -287,24 +287,18 @@ function EditModal({ image, position, isCarousel, onClose, onSave, isSaving }: E
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
-              className={`relative rounded-xl overflow-hidden border-2 border-dashed transition-all cursor-pointer ${
+              className={`relative rounded-xl overflow-hidden border-2 border-dashed transition-all ${
                 isDragging 
                   ? 'border-accent-start bg-accent-start/10' 
                   : 'border-hairline bg-surface/50 hover:border-accent-start/50 hover:bg-accent-start/5'
               } ${isSaving ? 'opacity-50 pointer-events-none' : ''}`}
             >
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileSelect}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                disabled={isSaving}
-              />
               
               {newUrl && newUrl.length > 0 ? (
-                <div className="relative aspect-video">
+                <div className="relative aspect-video group">
+                  {/* Reposition area - on top when image exists */}
                   <div 
-                    className="relative w-full h-full overflow-hidden bg-gray-100 cursor-move"
+                    className="relative w-full h-full overflow-hidden bg-gray-100 cursor-move z-20"
                     onMouseDown={handleImageDragStart}
                     onMouseMove={handleImageDragMove}
                     onMouseUp={handleImageDragEnd}
@@ -323,7 +317,7 @@ function EditModal({ image, position, isCarousel, onClose, onSave, isSaving }: E
                     />
                     {/* Crosshair indicator */}
                     <div 
-                      className="absolute pointer-events-none transition-all"
+                      className="absolute pointer-events-none transition-all z-30"
                       style={{
                         left: `${imagePosition.x}%`,
                         top: `${imagePosition.y}%`,
@@ -338,17 +332,37 @@ function EditModal({ image, position, isCarousel, onClose, onSave, isSaving }: E
                       </div>
                     </div>
                     {/* Drag instruction overlay */}
-                    <div className="absolute inset-0 bg-ink/0 hover:bg-ink/20 transition-colors flex items-center justify-center">
+                    <div className="absolute inset-0 bg-ink/0 hover:bg-ink/20 transition-colors flex items-center justify-center z-20">
                       {!isDraggingImage && (
                         <div className="bg-white/90 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                          <p className="text-sm font-medium text-ink">Drag to reposition</p>
+                          <p className="text-sm font-medium text-ink">Drag to reposition focal point</p>
                           <p className="text-xs text-muted mt-0.5">Position: {imagePosition.x.toFixed(0)}%, {imagePosition.y.toFixed(0)}%</p>
                         </div>
                       )}
                     </div>
                   </div>
+                  
+                  {/* File input for replacement - hidden behind, only shows on click outside */}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    disabled={isSaving}
+                    style={{ pointerEvents: 'none' }}
+                  />
+                  
+                  {/* Replace button */}
+                  <button
+                    type="button"
+                    onClick={() => document.querySelector<HTMLInputElement>('input[type="file"]')?.click()}
+                    className="absolute bottom-3 left-3 z-30 bg-white hover:bg-gray-50 text-ink text-xs font-medium px-3 py-1.5 rounded-lg shadow-lg border border-hairline transition-colors"
+                  >
+                    Replace Image
+                  </button>
+                  
                   {selectedFile && (
-                    <div className="absolute bottom-3 left-3 right-3 z-10">
+                    <div className="absolute top-3 left-3 right-3 z-30">
                       <div className="bg-green-500 text-white text-xs font-medium px-3 py-1.5 rounded-lg inline-flex items-center gap-2">
                         <Check size={12} weight="bold" />
                         New image selected - click Save to upload
@@ -356,16 +370,25 @@ function EditModal({ image, position, isCarousel, onClose, onSave, isSaving }: E
                     </div>
                   )}
                   {!selectedFile && (
-                    <div className="absolute top-3 left-3 right-3 z-10">
+                    <div className="absolute top-3 left-3 right-3 z-30 pointer-events-none">
                       <div className="bg-accent-start/90 backdrop-blur-sm text-white text-xs font-medium px-3 py-1.5 rounded-lg inline-flex items-center gap-2">
                         <CloudArrowUp size={14} weight="bold" />
-                        Drag image to adjust focal point • Click to replace
+                        Drag to adjust focal point
                       </div>
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="aspect-video flex items-center justify-center bg-gradient-to-br from-surface via-surface to-accent-start/5">
+                <>
+                  {/* File input for initial upload */}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    disabled={isSaving}
+                  />
+                  <div className="aspect-video flex items-center justify-center bg-gradient-to-br from-surface via-surface to-accent-start/5">
                   <div className="text-center p-8">
                     <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white shadow-sm flex items-center justify-center">
                       <CloudArrowUp size={32} weight="duotone" className="text-accent-start" />
