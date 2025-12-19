@@ -58,9 +58,11 @@ export async function getSectionHeader(): Promise<{ header: string; highlight: s
     return null;
   }
 
+  const typedData = data as { section_header: string; section_header_highlight: string };
+
   return {
-    header: data.section_header,
-    highlight: data.section_header_highlight,
+    header: typedData.section_header,
+    highlight: typedData.section_header_highlight,
   };
 }
 
