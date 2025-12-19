@@ -1,11 +1,14 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, InstagramLogo, FacebookLogo, TiktokLogo } from '@phosphor-icons/react';
+import { ArrowRight, InstagramLogo, FacebookLogo, TiktokLogo, Envelope, Phone, X } from '@phosphor-icons/react';
 import { Logo } from '@/components/ui/Logo';
 import { Button } from '@/components/ui/Button';
 
 export function Footer() {
+  const [showContactModal, setShowContactModal] = useState(false);
+
   return (
     <footer className="bg-surface border-t border-hairline pt-16 pb-8">
       <div className="container mx-auto px-4 md:px-6">
@@ -37,7 +40,14 @@ export function Footer() {
               <li><Link href="/faq" className="hover:text-accent-start transition-colors">FAQ</Link></li>
               <li><Link href="/shipping" className="hover:text-accent-start transition-colors">Shipping & Returns</Link></li>
               <li><Link href="/visit" className="hover:text-accent-start transition-colors">Visit Store</Link></li>
-              <li><Link href="/contact" className="hover:text-accent-start transition-colors">Contact Us</Link></li>
+              <li>
+                <button 
+                  onClick={() => setShowContactModal(true)}
+                  className="hover:text-accent-start transition-colors"
+                >
+                  Contact Us
+                </button>
+              </li>
             </ul>
           </div>
 
@@ -71,6 +81,63 @@ export function Footer() {
           </div>
         </div>
       </div>
+
+      {/* Contact Modal */}
+      {showContactModal && (
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowContactModal(false)}
+        >
+          <div 
+            className="bg-white rounded-2xl max-w-md w-full p-6 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button 
+              onClick={() => setShowContactModal(false)}
+              className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <X size={20} />
+            </button>
+            
+            <h2 className="text-2xl font-display font-bold text-ink mb-2">Contact Us</h2>
+            <p className="text-muted text-sm mb-6">Choose how you&apos;d like to get in touch</p>
+            
+            <div className="space-y-3">
+              {/* Email Option */}
+              <a
+                href="mailto:vintage.closet.vienna@gmail.com"
+                className="w-full p-4 border border-hairline rounded-lg hover:border-accent-start hover:bg-accent-start/5 transition-all flex items-center gap-4 group"
+              >
+                <div className="w-12 h-12 rounded-full bg-accent-start/10 flex items-center justify-center group-hover:bg-accent-start/20 transition-colors flex-shrink-0">
+                  <Envelope size={24} weight="duotone" className="text-accent-start" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-ink group-hover:text-accent-start transition-colors">Send Email</h3>
+                  <p className="text-sm text-muted truncate">vintage.closet.vienna@gmail.com</p>
+                </div>
+              </a>
+
+              {/* Phone Option */}
+              <a
+                href="tel:+436811070980"
+                className="w-full p-4 border border-hairline rounded-lg hover:border-accent-start hover:bg-accent-start/5 transition-all flex items-center gap-4 group"
+              >
+                <div className="w-12 h-12 rounded-full bg-accent-start/10 flex items-center justify-center group-hover:bg-accent-start/20 transition-colors flex-shrink-0">
+                  <Phone size={24} weight="duotone" className="text-accent-start" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-ink group-hover:text-accent-start transition-colors">Call Us</h3>
+                  <p className="text-sm text-muted">+43 681 10709980</p>
+                </div>
+              </a>
+            </div>
+
+            <p className="text-xs text-muted text-center mt-6">
+              We typically respond within 24 hours
+            </p>
+          </div>
+        </div>
+      )}
     </footer>
   );
 }
