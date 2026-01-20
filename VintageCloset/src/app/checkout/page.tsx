@@ -48,6 +48,7 @@ export default function CheckoutPage() {
   // Delivery method state
   const [deliveryMethod, setDeliveryMethod] = useState<'shipping' | 'pickup'>('shipping');
   const [pickupCode, setPickupCode] = useState<string>('');
+  const [codeCopied, setCodeCopied] = useState(false);
 
   // Generate random 6-character pickup code
   const generatePickupCode = () => {
@@ -442,11 +443,17 @@ export default function CheckoutPage() {
                         type="button"
                         onClick={() => {
                           navigator.clipboard.writeText(pickupCode);
+                          setCodeCopied(true);
+                          setTimeout(() => setCodeCopied(false), 1500);
                         }}
-                        className="p-2 text-muted hover:text-ink hover:bg-gray-200 rounded-lg transition-colors"
+                        className={`p-2 rounded-lg transition-colors ${
+                          codeCopied 
+                            ? 'text-green-500' 
+                            : 'text-muted hover:text-ink hover:bg-gray-200'
+                        }`}
                         title="Code kopieren"
                       >
-                        <Copy size={20} />
+                        {codeCopied ? <Check size={20} weight="bold" /> : <Copy size={20} />}
                       </button>
                     </div>
                     <p className="text-sm text-red-600 font-bold mt-4">
