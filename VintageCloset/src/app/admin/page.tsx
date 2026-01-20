@@ -12,7 +12,11 @@ import {
   Notebook,
   CalendarBlank,
   ArrowRight,
-  Receipt
+  Receipt,
+  Storefront,
+  X,
+  Check,
+  MagnifyingGlass
 } from '@phosphor-icons/react';
 import { StatCard, DataTable } from '@/components/admin';
 import { Button } from '@/components/ui/Button';
@@ -43,6 +47,20 @@ interface OrderRecord {
   created_at: string;
 }
 
+interface PickupCodeData {
+  id: string;
+  code: string;
+  customer_email: string;
+  customer_name: string;
+  product_title: string;
+  product_size: string;
+  product_id: string;
+  order_id: string;
+  active: boolean;
+  created_at: string;
+  product_image?: string;
+}
+
 const statusColors: Record<string, string> = {
   paid: 'bg-green-50 text-green-700',
   shipped: 'bg-blue-50 text-blue-700',
@@ -60,6 +78,14 @@ export default function AdminDashboard() {
   });
   const [recentSales, setRecentSales] = useState<RecentSale[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Pickup code modal state
+  const [showPickupModal, setShowPickupModal] = useState(false);
+  const [pickupCodeInput, setPickupCodeInput] = useState('');
+  const [pickupCodeData, setPickupCodeData] = useState<PickupCodeData | null>(null);
+  const [pickupError, setPickupError] = useState<string | null>(null);
+  const [isSearchingCode, setIsSearchingCode] = useState(false);
+  const [isRedeemingCode, setIsRedeemingCode] = useState(false);
 
   useEffect(() => {
     async function fetchDashboardData() {
@@ -119,6 +145,96 @@ export default function AdminDashboard() {
 
     fetchDashboardData();
   }, []);
+
+  // Search for pickup code
+  const handleSearchPickupCode = async () => {
+    if (!pickupCodeInput.trim()) return;
+    
+    setIsSearchingCode(true);
+    setPickupError(null);
+    setPickupCodeData(null);
+
+    try {
+      const { data, error } = await supabase
+        .from('pickup_codes')
+        .select('*')
+        .eq('code', pickupCodeInput.trim().toUpperCase())
+        .single();
+
+      if (error || !data) {
+        setPickupError('Code nicht gefunden');
+        return;
+      }
+
+      const pickupData = data as PickupCodeData;
+
+      if (!pickupData.active) {
+        setPickupError('Dieser Code wurde bereits eingelöst');
+        return;
+      }
+
+      // Get product image from orders table if available
+      if (pickupData.order_id) {
+        const { data: orderData } = await supabase
+          .from('orders')
+          .select('product_image')
+          .eq('id', pickupData.order_id)
+          .single();
+        
+        if (orderData) {
+          pickupData.product_image = (orderData as { product_image: string }).product_image;
+        }
+      }
+
+      setPickupCodeData(pickupData);
+    } catch (err) {
+      console.error('Error searching pickup code:', err);
+      setPickupError('Fehler beim Suchen');
+    } finally {
+      setIsSearchingCode(false);
+    }
+  };
+
+  // Redeem pickup code (mark as inactive)
+  const handleRedeemCode = async () => {
+    if (!pickupCodeData) return;
+
+    setIsRedeemingCode(true);
+
+    try {
+      const { error } = await supabase
+        .from('pickup_codes')
+        .update({ 
+          active: false, 
+          redeemed_at: new Date().toISOString() 
+        } as never)
+        .eq('id', pickupCodeData.id);
+
+      if (error) {
+        setPickupError('Fehler beim Einlösen');
+        return;
+      }
+
+      // Success - close modal and reset
+      setShowPickupModal(false);
+      setPickupCodeInput('');
+      setPickupCodeData(null);
+      setPickupError(null);
+    } catch (err) {
+      console.error('Error redeeming code:', err);
+      setPickupError('Fehler beim Einlösen');
+    } finally {
+      setIsRedeemingCode(false);
+    }
+  };
+
+  // Close pickup modal
+  const closePickupModal = () => {
+    setShowPickupModal(false);
+    setPickupCodeInput('');
+    setPickupCodeData(null);
+    setPickupError(null);
+  };
 
   const columns = [
     {
@@ -228,8 +344,140 @@ export default function AdminDashboard() {
               Create Event
             </Button>
           </Link>
+          <Button 
+            variant="secondary" 
+            className="gap-2"
+            onClick={() => setShowPickupModal(true)}
+          >
+            <Storefront size={16} weight="bold" />
+            Abholung
+          </Button>
         </div>
       </div>
+
+      {/* Pickup Code Modal */}
+      {showPickupModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/50" 
+            onClick={closePickupModal}
+          />
+          
+          {/* Modal */}
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+            {/* Close button */}
+            <button
+              onClick={closePickupModal}
+              className="absolute top-4 right-4 p-2 text-muted hover:text-ink hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <X size={20} weight="bold" />
+            </button>
+
+            <h2 className="text-xl font-display font-bold text-ink mb-4 flex items-center gap-2">
+              <Storefront size={24} className="text-accent-start" />
+              Abholung bestätigen
+            </h2>
+
+            {/* Search Input */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-ink mb-2">
+                Abholcode eingeben
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={pickupCodeInput}
+                  onChange={(e) => setPickupCodeInput(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearchPickupCode()}
+                  placeholder="z.B. ABC123"
+                  maxLength={6}
+                  className="flex-1 h-12 px-4 rounded-lg border border-hairline bg-white text-ink text-lg font-mono tracking-widest uppercase placeholder:text-muted/60 focus:outline-none focus:border-accent-start focus:ring-2 focus:ring-accent-start/20 transition-all"
+                />
+                <Button
+                  onClick={handleSearchPickupCode}
+                  disabled={!pickupCodeInput.trim() || isSearchingCode}
+                  isLoading={isSearchingCode}
+                  className="px-4"
+                >
+                  <MagnifyingGlass size={20} weight="bold" />
+                </Button>
+              </div>
+              {pickupError && (
+                <p className="text-sm text-red-600 mt-2">{pickupError}</p>
+              )}
+            </div>
+
+            {/* Product Details */}
+            {pickupCodeData && (
+              <div className="border-t border-hairline pt-4 space-y-4">
+                {/* Product Card */}
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <div className="flex gap-4">
+                    <div className="w-20 h-24 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
+                      {pickupCodeData.product_image ? (
+                        <Image
+                          src={pickupCodeData.product_image}
+                          alt={pickupCodeData.product_title}
+                          width={80}
+                          height={96}
+                          className="object-cover w-full h-full"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Package size={24} className="text-muted" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-ink">{pickupCodeData.product_title}</h3>
+                      <p className="text-sm text-muted">Size: {pickupCodeData.product_size}</p>
+                      <p className="text-xs font-mono text-muted mt-2">Code: {pickupCodeData.code}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Order Details */}
+                <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+                  <h4 className="text-sm font-bold text-ink mb-2">Bestelldetails</h4>
+                  <div className="text-sm space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-muted">Kunde:</span>
+                      <span className="font-medium text-ink">{pickupCodeData.customer_name || '-'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted">E-Mail:</span>
+                      <span className="font-medium text-ink text-xs">{pickupCodeData.customer_email}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted">Bestellt am:</span>
+                      <span className="font-medium text-ink">
+                        {new Date(pickupCodeData.created_at).toLocaleDateString('de-AT', { 
+                          day: '2-digit', 
+                          month: '2-digit', 
+                          year: 'numeric' 
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Confirm Button */}
+                <Button
+                  onClick={handleRedeemCode}
+                  disabled={isRedeemingCode}
+                  isLoading={isRedeemingCode}
+                  className="w-full gap-2"
+                  size="lg"
+                >
+                  <Check size={20} weight="bold" />
+                  Abholung bestätigen
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Recent Sales */}
       <div>
