@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, ShoppingBag, CreditCard, Lock, Ticket, Check, X } from '@phosphor-icons/react';
+import { ArrowLeft, ShoppingBag, CreditCard, Lock, Ticket, Check, X, Truck, Storefront, Copy } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/Button';
 import { useCart } from '@/lib/cart';
 import { validateDiscountCode, calculateDiscount } from '@/lib/discount-codes';
@@ -44,6 +44,28 @@ export default function CheckoutPage() {
   } | null>(null);
   const [discountError, setDiscountError] = useState<string | null>(null);
   const [product, setProduct] = useState<Product | null>(null);
+  
+  // Delivery method state
+  const [deliveryMethod, setDeliveryMethod] = useState<'shipping' | 'pickup'>('shipping');
+  const [pickupCode, setPickupCode] = useState<string>('');
+
+  // Generate random 6-character pickup code
+  const generatePickupCode = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+  };
+
+  // Handle delivery method change
+  const handleDeliveryMethodChange = (method: 'shipping' | 'pickup') => {
+    setDeliveryMethod(method);
+    if (method === 'pickup' && !pickupCode) {
+      setPickupCode(generatePickupCode());
+    }
+  };
 
   // Redirect to home if cart is empty
   useEffect(() => {
@@ -160,13 +182,15 @@ export default function CheckoutPage() {
   };
 
   const isValid = 
-    shippingInfo.customerName.trim() !== '' &&
     shippingInfo.customerEmail.trim() !== '' &&
     shippingInfo.customerEmail.includes('@') &&
-    shippingInfo.shippingAddress.trim() !== '' &&
-    shippingInfo.shippingCity.trim() !== '' &&
-    shippingInfo.shippingPostalCode.trim() !== '' &&
-    shippingInfo.shippingCountry.trim() !== '';
+    (deliveryMethod === 'pickup' || (
+      shippingInfo.customerName.trim() !== '' &&
+      shippingInfo.shippingAddress.trim() !== '' &&
+      shippingInfo.shippingCity.trim() !== '' &&
+      shippingInfo.shippingPostalCode.trim() !== '' &&
+      shippingInfo.shippingCountry.trim() !== ''
+    ));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -252,99 +276,188 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* Shipping Address */}
+              {/* Delivery Method Selection */}
               <div className="bg-white rounded-2xl border border-hairline p-6 space-y-4">
-                <h2 className="text-lg font-display font-bold text-ink">Shipping Address</h2>
+                <h2 className="text-lg font-display font-bold text-ink">Delivery Method</h2>
                 
-                <div>
-                  <label className="block text-sm font-medium text-ink mb-2">
-                    Full Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={shippingInfo.customerName}
-                    onChange={(e) => updateField('customerName', e.target.value)}
-                    placeholder="John Doe"
-                    required
-                    className="w-full h-12 px-4 rounded-lg border border-hairline bg-white text-ink placeholder:text-muted/60 focus:outline-none focus:border-accent-start focus:ring-2 focus:ring-accent-start/20 transition-all"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-ink mb-2">
-                    Street Address <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={shippingInfo.shippingAddress}
-                    onChange={(e) => updateField('shippingAddress', e.target.value)}
-                    placeholder="Neubaugasse 12"
-                    required
-                    className="w-full h-12 px-4 rounded-lg border border-hairline bg-white text-ink placeholder:text-muted/60 focus:outline-none focus:border-accent-start focus:ring-2 focus:ring-accent-start/20 transition-all"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-ink mb-2">
-                      City <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={shippingInfo.shippingCity}
-                      onChange={(e) => updateField('shippingCity', e.target.value)}
-                      placeholder="Vienna"
-                      required
-                      className="w-full h-12 px-4 rounded-lg border border-hairline bg-white text-ink placeholder:text-muted/60 focus:outline-none focus:border-accent-start focus:ring-2 focus:ring-accent-start/20 transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-ink mb-2">
-                      Postal Code <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={shippingInfo.shippingPostalCode}
-                      onChange={(e) => updateField('shippingPostalCode', e.target.value)}
-                      placeholder="1070"
-                      required
-                      className="w-full h-12 px-4 rounded-lg border border-hairline bg-white text-ink placeholder:text-muted/60 focus:outline-none focus:border-accent-start focus:ring-2 focus:ring-accent-start/20 transition-all"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-ink mb-2">
-                    Country <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={shippingInfo.shippingCountry}
-                    onChange={(e) => updateField('shippingCountry', e.target.value)}
-                    required
-                    className="w-full h-12 px-4 rounded-lg border border-hairline bg-white text-ink focus:outline-none focus:border-accent-start focus:ring-2 focus:ring-accent-start/20 transition-all"
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Shipping Option */}
+                  <button
+                    type="button"
+                    onClick={() => handleDeliveryMethodChange('shipping')}
+                    className={`p-4 rounded-xl border-2 transition-all text-left ${
+                      deliveryMethod === 'shipping'
+                        ? 'border-accent-start bg-accent-start/5'
+                        : 'border-hairline hover:border-muted'
+                    }`}
                   >
-                    <option value="Austria">Austria</option>
-                    <option value="Germany">Germany</option>
-                    <option value="Switzerland">Switzerland</option>
-                    <option value="Italy">Italy</option>
-                    <option value="France">France</option>
-                    <option value="Netherlands">Netherlands</option>
-                    <option value="Belgium">Belgium</option>
-                    <option value="Czech Republic">Czech Republic</option>
-                    <option value="Hungary">Hungary</option>
-                    <option value="Slovakia">Slovakia</option>
-                    <option value="Slovenia">Slovenia</option>
-                    <option value="Poland">Poland</option>
-                    <option value="United Kingdom">United Kingdom</option>
-                    <option value="Spain">Spain</option>
-                    <option value="Portugal">Portugal</option>
-                    <option value="Sweden">Sweden</option>
-                    <option value="Denmark">Denmark</option>
-                    <option value="Norway">Norway</option>
-                    <option value="Finland">Finland</option>
-                  </select>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        deliveryMethod === 'shipping' ? 'bg-accent-start text-white' : 'bg-gray-100 text-muted'
+                      }`}>
+                        <Truck size={20} weight="bold" />
+                      </div>
+                      <div>
+                        <p className={`font-bold text-sm ${deliveryMethod === 'shipping' ? 'text-ink' : 'text-muted'}`}>
+                          Versand
+                        </p>
+                        <p className="text-xs text-muted">Lieferung nach Hause</p>
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* In-Store Pickup Option */}
+                  <button
+                    type="button"
+                    onClick={() => handleDeliveryMethodChange('pickup')}
+                    className={`p-4 rounded-xl border-2 transition-all text-left ${
+                      deliveryMethod === 'pickup'
+                        ? 'border-accent-start bg-accent-start/5'
+                        : 'border-hairline hover:border-muted'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        deliveryMethod === 'pickup' ? 'bg-accent-start text-white' : 'bg-gray-100 text-muted'
+                      }`}>
+                        <Storefront size={20} weight="bold" />
+                      </div>
+                      <div>
+                        <p className={`font-bold text-sm ${deliveryMethod === 'pickup' ? 'text-ink' : 'text-muted'}`}>
+                          Abholung
+                        </p>
+                        <p className="text-xs text-muted">Im Store abholen</p>
+                      </div>
+                    </div>
+                  </button>
                 </div>
               </div>
+
+              {/* Conditional: Shipping Address or Pickup Code */}
+              {deliveryMethod === 'shipping' ? (
+                /* Shipping Address */
+                <div className="bg-white rounded-2xl border border-hairline p-6 space-y-4">
+                  <h2 className="text-lg font-display font-bold text-ink">Shipping Address</h2>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-ink mb-2">
+                      Full Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={shippingInfo.customerName}
+                      onChange={(e) => updateField('customerName', e.target.value)}
+                      placeholder="John Doe"
+                      required
+                      className="w-full h-12 px-4 rounded-lg border border-hairline bg-white text-ink placeholder:text-muted/60 focus:outline-none focus:border-accent-start focus:ring-2 focus:ring-accent-start/20 transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-ink mb-2">
+                      Street Address <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={shippingInfo.shippingAddress}
+                      onChange={(e) => updateField('shippingAddress', e.target.value)}
+                      placeholder="Neubaugasse 12"
+                      required
+                      className="w-full h-12 px-4 rounded-lg border border-hairline bg-white text-ink placeholder:text-muted/60 focus:outline-none focus:border-accent-start focus:ring-2 focus:ring-accent-start/20 transition-all"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-ink mb-2">
+                        City <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={shippingInfo.shippingCity}
+                        onChange={(e) => updateField('shippingCity', e.target.value)}
+                        placeholder="Vienna"
+                        required
+                        className="w-full h-12 px-4 rounded-lg border border-hairline bg-white text-ink placeholder:text-muted/60 focus:outline-none focus:border-accent-start focus:ring-2 focus:ring-accent-start/20 transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-ink mb-2">
+                        Postal Code <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={shippingInfo.shippingPostalCode}
+                        onChange={(e) => updateField('shippingPostalCode', e.target.value)}
+                        placeholder="1070"
+                        required
+                        className="w-full h-12 px-4 rounded-lg border border-hairline bg-white text-ink placeholder:text-muted/60 focus:outline-none focus:border-accent-start focus:ring-2 focus:ring-accent-start/20 transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-ink mb-2">
+                      Country <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={shippingInfo.shippingCountry}
+                      onChange={(e) => updateField('shippingCountry', e.target.value)}
+                      required
+                      className="w-full h-12 px-4 rounded-lg border border-hairline bg-white text-ink focus:outline-none focus:border-accent-start focus:ring-2 focus:ring-accent-start/20 transition-all"
+                    >
+                      <option value="Austria">Austria</option>
+                      <option value="Germany">Germany</option>
+                      <option value="Switzerland">Switzerland</option>
+                      <option value="Italy">Italy</option>
+                      <option value="France">France</option>
+                      <option value="Netherlands">Netherlands</option>
+                      <option value="Belgium">Belgium</option>
+                      <option value="Czech Republic">Czech Republic</option>
+                      <option value="Hungary">Hungary</option>
+                      <option value="Slovakia">Slovakia</option>
+                      <option value="Slovenia">Slovenia</option>
+                      <option value="Poland">Poland</option>
+                      <option value="United Kingdom">United Kingdom</option>
+                      <option value="Spain">Spain</option>
+                      <option value="Portugal">Portugal</option>
+                      <option value="Sweden">Sweden</option>
+                      <option value="Denmark">Denmark</option>
+                      <option value="Norway">Norway</option>
+                      <option value="Finland">Finland</option>
+                    </select>
+                  </div>
+                </div>
+              ) : (
+                /* In-Store Pickup Code */
+                <div className="bg-white rounded-2xl border border-hairline p-6 space-y-4">
+                  <h2 className="text-lg font-display font-bold text-ink">Abholcode</h2>
+                  
+                  <div className="bg-gray-50 rounded-xl p-6 text-center">
+                    <p className="text-sm text-muted mb-3">
+                      Zeige diesen Code beim Abholen im Store vor:
+                    </p>
+                    <div className="flex items-center justify-center gap-3">
+                      <span className="text-4xl font-mono font-bold tracking-[0.3em] text-ink">
+                        {pickupCode}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(pickupCode);
+                        }}
+                        className="p-2 text-muted hover:text-ink hover:bg-gray-200 rounded-lg transition-colors"
+                        title="Code kopieren"
+                      >
+                        <Copy size={20} />
+                      </button>
+                    </div>
+                    <p className="text-xs text-muted mt-4">
+                      Der Code wird dir auch per E-Mail zugeschickt.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Error Message */}
               {error && (
