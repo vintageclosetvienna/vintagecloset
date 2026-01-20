@@ -189,6 +189,30 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         console.log('Product marked as sold:', productId);
       }
     }
+
+    // Save pickup code to database if this is a pickup order
+    if (deliveryMethod === 'pickup' && pickupCode) {
+      const pickupCodeData = {
+        code: pickupCode,
+        order_id: existingOrder ? (existingOrder as { id: string }).id : null,
+        product_id: productId || null,
+        customer_email: customerEmail,
+        customer_name: customerName,
+        product_title: productName,
+        product_size: productSize,
+        active: true,
+      };
+
+      const { error: pickupCodeError } = await supabase
+        .from('pickup_codes')
+        .insert(pickupCodeData as never);
+
+      if (pickupCodeError) {
+        console.error('Error saving pickup code:', pickupCodeError);
+      } else {
+        console.log('Pickup code saved:', pickupCode);
+      }
+    }
   } catch (error) {
     console.error('Error processing checkout completion:', error);
   }
