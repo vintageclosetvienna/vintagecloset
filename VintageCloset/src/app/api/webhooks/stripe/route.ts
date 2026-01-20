@@ -83,63 +83,98 @@ export async function POST(request: NextRequest) {
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   console.log('Processing completed checkout:', session.id);
 
-  // Get metadata from session
-  const productId = session.metadata?.productId;
-  const productName = session.metadata?.productName || 'Unknown Product';
-  const productSize = session.metadata?.size || 'N/A';
-  const productImage = session.metadata?.productImage || null;
-  const originalPrice = parseFloat(session.metadata?.originalPrice || '0');
-  const discountApplied = parseInt(session.metadata?.discount || '0', 10);
+  // Get all data from metadata (we store everything there during checkout creation)
+  const metadata = session.metadata || {};
+  const productId = metadata.productId;
+  const productName = metadata.productName || 'Unknown Product';
+  const productSize = metadata.size || 'N/A';
+  const productImage = metadata.productImage || null;
+  const originalPrice = parseFloat(metadata.originalPrice || '0');
+  const discountApplied = parseInt(metadata.productDiscount || '0', 10);
+  
+  // Delivery method and pickup code
+  const deliveryMethod = metadata.deliveryMethod || 'shipping';
+  const pickupCode = metadata.pickupCode || '';
+  
+  // Customer and shipping info from metadata
+  const customerName = metadata.customerName || session.customer_details?.name || 'Unknown';
+  const customerEmail = metadata.customerEmail || session.customer_details?.email || '';
+  const shippingAddress = metadata.shippingAddress || '';
+  const shippingCity = metadata.shippingCity || '';
+  const shippingPostalCode = metadata.shippingPostalCode || '';
+  const shippingCountry = metadata.shippingCountry || '';
+  
+  // Discount code info
+  const discountCode = metadata.discountCode || null;
+  const discountCodeAmount = parseFloat(metadata.discountCodeAmount || '0');
 
-  // Get customer details from session
-  const customerDetails = session.customer_details;
-  // Use collected_information for shipping if available, otherwise fall back to customer_details
-  const shippingDetails = (session as unknown as { collected_information?: { shipping_details?: typeof customerDetails } }).collected_information?.shipping_details || customerDetails;
-
-  if (!customerDetails?.email || !shippingDetails?.address) {
-    console.error('Missing customer or shipping details in session');
+  if (!customerEmail) {
+    console.error('Missing customer email in session');
     return;
   }
 
   try {
     const supabase = createServerClient();
 
-    // Create the order record
-    const orderData = {
-      product_id: productId || null,
-      stripe_session_id: session.id,
-      stripe_payment_intent_id: session.payment_intent as string || null,
-      status: 'paid',
-      customer_name: customerDetails.name || 'Unknown',
-      customer_email: customerDetails.email,
-      shipping_address: [
-        shippingDetails.address?.line1,
-        shippingDetails.address?.line2,
-      ].filter(Boolean).join(', '),
-      shipping_city: shippingDetails.address?.city || '',
-      shipping_postal_code: shippingDetails.address?.postal_code || '',
-      shipping_country: shippingDetails.address?.country || '',
-      original_price: originalPrice,
-      discount_applied: discountApplied,
-      final_price: (session.amount_total || 0) / 100, // Convert from cents
-      product_title: productName,
-      product_size: productSize,
-      product_image: productImage,
-    };
-    
-    const { data: order, error: orderError } = await supabase
+    // First, update existing pending order to paid status (if exists)
+    const { data: existingOrder, error: findError } = await supabase
       .from('orders')
-      .insert(orderData as never)
-      .select()
+      .select('id')
+      .eq('stripe_session_id', session.id)
       .single();
 
-    if (orderError) {
-      console.error('Error creating order:', orderError);
-      return;
-    }
+    if (existingOrder && !findError) {
+      // Update existing order
+      const { error: updateOrderError } = await supabase
+        .from('orders')
+        .update({
+          status: 'paid',
+          stripe_payment_intent_id: session.payment_intent as string || null,
+        } as never)
+        .eq('id', (existingOrder as { id: string }).id);
 
-    const orderId = (order as { id: string } | null)?.id;
-    console.log('Order created:', orderId);
+      if (updateOrderError) {
+        console.error('Error updating order to paid:', updateOrderError);
+      } else {
+        console.log('Order updated to paid:', (existingOrder as { id: string }).id);
+      }
+    } else {
+      // Create new order if pending order doesn't exist
+      const orderData = {
+        product_id: productId || null,
+        stripe_session_id: session.id,
+        stripe_payment_intent_id: session.payment_intent as string || null,
+        status: 'paid',
+        customer_name: customerName,
+        customer_email: customerEmail,
+        shipping_address: deliveryMethod === 'pickup' 
+          ? `ABHOLUNG - Code: ${pickupCode}` 
+          : shippingAddress,
+        shipping_city: shippingCity,
+        shipping_postal_code: shippingPostalCode,
+        shipping_country: shippingCountry,
+        original_price: originalPrice,
+        discount_applied: discountApplied,
+        discount_code: discountCode,
+        discount_code_amount: discountCodeAmount,
+        final_price: (session.amount_total || 0) / 100,
+        product_title: productName,
+        product_size: productSize,
+        product_image: productImage,
+      };
+      
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .insert(orderData as never)
+        .select()
+        .single();
+
+      if (orderError) {
+        console.error('Error creating order:', orderError);
+      } else {
+        console.log('Order created:', (order as { id: string } | null)?.id);
+      }
+    }
 
     // Mark the product as sold (if we have a product ID)
     if (productId) {
