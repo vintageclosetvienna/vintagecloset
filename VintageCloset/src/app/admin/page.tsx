@@ -360,121 +360,129 @@ export default function AdminDashboard() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Backdrop */}
           <div 
-            className="absolute inset-0 bg-black/50" 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
             onClick={closePickupModal}
           />
           
           {/* Modal */}
-          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-            {/* Close button */}
-            <button
-              onClick={closePickupModal}
-              className="absolute top-4 right-4 p-2 text-muted hover:text-ink hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <X size={20} weight="bold" />
-            </button>
-
-            <h2 className="text-xl font-display font-bold text-ink mb-4 flex items-center gap-2">
-              <Storefront size={24} className="text-accent-start" />
-              Abholung bestätigen
-            </h2>
-
-            {/* Search Input */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-ink mb-2">
-                Abholcode eingeben
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={pickupCodeInput}
-                  onChange={(e) => setPickupCodeInput(e.target.value.toUpperCase())}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearchPickupCode()}
-                  placeholder="z.B. ABC123"
-                  maxLength={6}
-                  className="flex-1 h-12 px-4 rounded-lg border border-hairline bg-white text-ink text-lg font-mono tracking-widest uppercase placeholder:text-muted/60 focus:outline-none focus:border-accent-start focus:ring-2 focus:ring-accent-start/20 transition-all"
-                />
-                <Button
-                  onClick={handleSearchPickupCode}
-                  disabled={!pickupCodeInput.trim() || isSearchingCode}
-                  isLoading={isSearchingCode}
-                  className="px-4"
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-accent-start to-accent-end px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                    <Storefront size={20} weight="bold" className="text-white" />
+                  </div>
+                  <h2 className="text-lg font-display font-bold text-white">
+                    Abholung
+                  </h2>
+                </div>
+                <button
+                  onClick={closePickupModal}
+                  className="p-1.5 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-colors"
                 >
-                  <MagnifyingGlass size={20} weight="bold" />
-                </Button>
+                  <X size={18} weight="bold" />
+                </button>
               </div>
-              {pickupError && (
-                <p className="text-sm text-red-600 mt-2">{pickupError}</p>
-              )}
             </div>
 
-            {/* Product Details */}
-            {pickupCodeData && (
-              <div className="border-t border-hairline pt-4 space-y-4">
-                {/* Product Card */}
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <div className="flex gap-4">
-                    <div className="w-20 h-24 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
-                      {pickupCodeData.product_image ? (
-                        <Image
-                          src={pickupCodeData.product_image}
-                          alt={pickupCodeData.product_title}
-                          width={80}
-                          height={96}
-                          className="object-cover w-full h-full"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Package size={24} className="text-muted" />
+            {/* Content */}
+            <div className="p-6">
+              {/* Search Input */}
+              <div className="mb-5">
+                <label className="block text-xs font-semibold text-muted uppercase tracking-wide mb-2">
+                  Abholcode eingeben
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={pickupCodeInput}
+                    onChange={(e) => setPickupCodeInput(e.target.value.toUpperCase())}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearchPickupCode()}
+                    placeholder="ABC123"
+                    maxLength={6}
+                    className="flex-1 h-11 px-4 rounded-xl border-2 border-gray-200 bg-gray-50 text-ink text-center text-xl font-mono font-bold tracking-[0.25em] uppercase placeholder:text-gray-300 placeholder:tracking-[0.25em] focus:outline-none focus:border-accent-start focus:bg-white transition-all"
+                  />
+                  <Button
+                    onClick={handleSearchPickupCode}
+                    disabled={!pickupCodeInput.trim() || isSearchingCode}
+                    isLoading={isSearchingCode}
+                    className="h-11 w-11 p-0 flex items-center justify-center"
+                  >
+                    <MagnifyingGlass size={18} weight="bold" />
+                  </Button>
+                </div>
+                {pickupError && (
+                  <p className="text-xs text-red-500 mt-2 font-medium">{pickupError}</p>
+                )}
+              </div>
+
+              {/* Product Details */}
+              {pickupCodeData && (
+                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  {/* Product Card */}
+                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-100">
+                    <div className="flex gap-4">
+                      <div className="w-16 h-20 bg-white rounded-lg overflow-hidden flex-shrink-0 shadow-sm border border-gray-100">
+                        {pickupCodeData.product_image ? (
+                          <Image
+                            src={pickupCodeData.product_image}
+                            alt={pickupCodeData.product_title}
+                            width={64}
+                            height={80}
+                            className="object-cover w-full h-full"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gray-50">
+                            <Package size={20} className="text-gray-300" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-ink text-sm leading-tight line-clamp-2">{pickupCodeData.product_title}</h3>
+                        <p className="text-xs text-muted mt-1">Größe: {pickupCodeData.product_size}</p>
+                        <div className="mt-2 inline-flex items-center px-2 py-0.5 bg-accent-start/10 rounded text-xs font-mono font-bold text-accent-start">
+                          {pickupCodeData.code}
                         </div>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-bold text-ink">{pickupCodeData.product_title}</h3>
-                      <p className="text-sm text-muted">Size: {pickupCodeData.product_size}</p>
-                      <p className="text-xs font-mono text-muted mt-2">Code: {pickupCodeData.code}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Order Details */}
-                <div className="bg-gray-50 rounded-xl p-4 space-y-2">
-                  <h4 className="text-sm font-bold text-ink mb-2">Bestelldetails</h4>
-                  <div className="text-sm space-y-1">
-                    <div className="flex justify-between">
-                      <span className="text-muted">Kunde:</span>
-                      <span className="font-medium text-ink">{pickupCodeData.customer_name || '-'}</span>
+                  {/* Order Details */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <p className="text-[10px] text-muted uppercase font-semibold mb-0.5">Kunde</p>
+                      <p className="text-sm font-medium text-ink truncate">{pickupCodeData.customer_name || '-'}</p>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted">E-Mail:</span>
-                      <span className="font-medium text-ink text-xs">{pickupCodeData.customer_email}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted">Bestellt am:</span>
-                      <span className="font-medium text-ink">
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <p className="text-[10px] text-muted uppercase font-semibold mb-0.5">Datum</p>
+                      <p className="text-sm font-medium text-ink">
                         {new Date(pickupCodeData.created_at).toLocaleDateString('de-AT', { 
                           day: '2-digit', 
                           month: '2-digit', 
-                          year: 'numeric' 
+                          year: '2-digit' 
                         })}
-                      </span>
+                      </p>
                     </div>
                   </div>
-                </div>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <p className="text-[10px] text-muted uppercase font-semibold mb-0.5">E-Mail</p>
+                    <p className="text-sm font-medium text-ink truncate">{pickupCodeData.customer_email}</p>
+                  </div>
 
-                {/* Confirm Button */}
-                <Button
-                  onClick={handleRedeemCode}
-                  disabled={isRedeemingCode}
-                  isLoading={isRedeemingCode}
-                  className="w-full gap-2"
-                  size="lg"
-                >
-                  <Check size={20} weight="bold" />
-                  Abholung bestätigen
-                </Button>
-              </div>
-            )}
+                  {/* Confirm Button */}
+                  <Button
+                    onClick={handleRedeemCode}
+                    disabled={isRedeemingCode}
+                    isLoading={isRedeemingCode}
+                    className="w-full h-11 gap-2 mt-2"
+                  >
+                    <Check size={18} weight="bold" />
+                    Abholung bestätigen
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
