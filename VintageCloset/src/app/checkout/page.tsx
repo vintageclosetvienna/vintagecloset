@@ -209,8 +209,10 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           productId: items[0].id,
           productSlug: items[0].slug,
-          shippingInfo,
+          shippingInfo: deliveryMethod === 'shipping' ? shippingInfo : { customerEmail: shippingInfo.customerEmail },
           discountCode: appliedDiscount?.code || null,
+          deliveryMethod,
+          pickupCode: deliveryMethod === 'pickup' ? pickupCode : null,
         }),
       });
 
@@ -348,7 +350,6 @@ export default function CheckoutPage() {
                       value={shippingInfo.customerName}
                       onChange={(e) => updateField('customerName', e.target.value)}
                       placeholder="John Doe"
-                      required
                       className="w-full h-12 px-4 rounded-lg border border-hairline bg-white text-ink placeholder:text-muted/60 focus:outline-none focus:border-accent-start focus:ring-2 focus:ring-accent-start/20 transition-all"
                     />
                   </div>
@@ -362,7 +363,6 @@ export default function CheckoutPage() {
                       value={shippingInfo.shippingAddress}
                       onChange={(e) => updateField('shippingAddress', e.target.value)}
                       placeholder="Neubaugasse 12"
-                      required
                       className="w-full h-12 px-4 rounded-lg border border-hairline bg-white text-ink placeholder:text-muted/60 focus:outline-none focus:border-accent-start focus:ring-2 focus:ring-accent-start/20 transition-all"
                     />
                   </div>
@@ -377,7 +377,6 @@ export default function CheckoutPage() {
                         value={shippingInfo.shippingCity}
                         onChange={(e) => updateField('shippingCity', e.target.value)}
                         placeholder="Vienna"
-                        required
                         className="w-full h-12 px-4 rounded-lg border border-hairline bg-white text-ink placeholder:text-muted/60 focus:outline-none focus:border-accent-start focus:ring-2 focus:ring-accent-start/20 transition-all"
                       />
                     </div>
@@ -390,7 +389,6 @@ export default function CheckoutPage() {
                         value={shippingInfo.shippingPostalCode}
                         onChange={(e) => updateField('shippingPostalCode', e.target.value)}
                         placeholder="1070"
-                        required
                         className="w-full h-12 px-4 rounded-lg border border-hairline bg-white text-ink placeholder:text-muted/60 focus:outline-none focus:border-accent-start focus:ring-2 focus:ring-accent-start/20 transition-all"
                       />
                     </div>
@@ -403,7 +401,6 @@ export default function CheckoutPage() {
                     <select
                       value={shippingInfo.shippingCountry}
                       onChange={(e) => updateField('shippingCountry', e.target.value)}
-                      required
                       className="w-full h-12 px-4 rounded-lg border border-hairline bg-white text-ink focus:outline-none focus:border-accent-start focus:ring-2 focus:ring-accent-start/20 transition-all"
                     >
                       <option value="Austria">Austria</option>

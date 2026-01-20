@@ -30,35 +30,66 @@ export async function POST(request: NextRequest) {
     });
 
     const body = await request.json();
-    const { productId, productSlug, shippingInfo, discountCode } = body as {
+    const { productId, productSlug, shippingInfo, discountCode, deliveryMethod, pickupCode } = body as {
       productId?: string;
       productSlug?: string;
-      shippingInfo?: ShippingInfo;
+      shippingInfo?: Partial<ShippingInfo>;
       discountCode?: string | null;
+      deliveryMethod?: 'shipping' | 'pickup';
+      pickupCode?: string | null;
     };
 
-    // Validate shipping info
-    if (!shippingInfo) {
-      return NextResponse.json(
-        { error: 'Shipping information is required' },
-        { status: 400 }
-      );
-    }
+    const isPickup = deliveryMethod === 'pickup';
 
-    const { customerName, customerEmail, shippingAddress, shippingCity, shippingPostalCode, shippingCountry } = shippingInfo;
-
-    if (!customerName || !customerEmail || !shippingAddress || !shippingCity || !shippingPostalCode || !shippingCountry) {
-      return NextResponse.json(
-        { error: 'All shipping fields are required' },
-        { status: 400 }
-      );
-    }
-
-    if (!customerEmail.includes('@')) {
+    // Validate email (required for both methods)
+    const customerEmail = shippingInfo?.customerEmail;
+    if (!customerEmail || !customerEmail.includes('@')) {
       return NextResponse.json(
         { error: 'Please provide a valid email address' },
         { status: 400 }
       );
+    }
+
+    // Validate shipping info only for shipping orders
+    let customerName = '';
+    let shippingAddress = '';
+    let shippingCity = '';
+    let shippingPostalCode = '';
+    let shippingCountry = '';
+
+    if (!isPickup) {
+      if (!shippingInfo) {
+        return NextResponse.json(
+          { error: 'Shipping information is required' },
+          { status: 400 }
+        );
+      }
+
+      customerName = shippingInfo.customerName || '';
+      shippingAddress = shippingInfo.shippingAddress || '';
+      shippingCity = shippingInfo.shippingCity || '';
+      shippingPostalCode = shippingInfo.shippingPostalCode || '';
+      shippingCountry = shippingInfo.shippingCountry || '';
+
+      if (!customerName || !shippingAddress || !shippingCity || !shippingPostalCode || !shippingCountry) {
+        return NextResponse.json(
+          { error: 'All shipping fields are required' },
+          { status: 400 }
+        );
+      }
+    } else {
+      // For pickup, validate pickup code
+      if (!pickupCode) {
+        return NextResponse.json(
+          { error: 'Pickup code is required for in-store pickup' },
+          { status: 400 }
+        );
+      }
+      customerName = 'In-Store Pickup';
+      shippingAddress = 'Abholung im Store';
+      shippingCity = 'Vienna';
+      shippingPostalCode = '-';
+      shippingCountry = 'Austria';
     }
 
     // Fetch the actual product from database
@@ -176,6 +207,9 @@ export async function POST(request: NextRequest) {
         finalPrice: finalPrice.toString(),
         gender: product.gender,
         category: product.category,
+        // Delivery method
+        deliveryMethod: isPickup ? 'pickup' : 'shipping',
+        pickupCode: pickupCode || '',
         // Shipping info
         customerName,
         customerEmail,
@@ -205,7 +239,7 @@ export async function POST(request: NextRequest) {
           status: 'pending',
           customer_name: customerName,
           customer_email: customerEmail,
-          shipping_address: shippingAddress,
+          shipping_address: isPickup ? `ABHOLUNG - Code: ${pickupCode}` : shippingAddress,
           shipping_city: shippingCity,
           shipping_postal_code: shippingPostalCode,
           shipping_country: shippingCountry,
