@@ -452,8 +452,8 @@ export default function CheckoutPage() {
                         <Copy size={20} />
                       </button>
                     </div>
-                    <p className="text-xs text-muted mt-4">
-                      Der Code wird dir auch per E-Mail zugeschickt.
+                    <p className="text-sm text-red-600 font-bold mt-4">
+                      !! Mache JETZT einen Screenshot bevor du zahlst – du BRAUCHST diesen Code um es abzuholen !!
                     </p>
                   </div>
                 </div>
