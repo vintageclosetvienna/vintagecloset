@@ -363,9 +363,10 @@ export default function CheckoutPage() {
                       type="text"
                       value={shippingInfo.shippingAddress}
                       onChange={(e) => updateField('shippingAddress', e.target.value)}
-                      placeholder="Neubaugasse 12"
+                      placeholder="Neubaugasse 12/1/3"
                       className="w-full h-12 px-4 rounded-lg border border-hairline bg-white text-ink placeholder:text-muted/60 focus:outline-none focus:border-accent-start focus:ring-2 focus:ring-accent-start/20 transition-all"
                     />
+                    <p className="text-xs text-muted mt-1">Hausnummer / Stiege / Türnummer</p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
