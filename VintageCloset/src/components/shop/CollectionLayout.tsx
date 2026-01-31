@@ -23,6 +23,7 @@ interface CollectionLayoutProps {
 
 export function CollectionLayout({ title, description, heroImage: propHeroImage, gender, children }: CollectionLayoutProps) {
   const [heroImage, setHeroImage] = useState<string>(propHeroImage || FALLBACK_HEROES[gender]);
+  const [filters, setFilters] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
     // If a heroImage was passed as prop, use it
@@ -63,11 +64,16 @@ export function CollectionLayout({ title, description, heroImage: propHeroImage,
          </div>
       </div>
 
-      <FilterRail gender={gender} />
+      <FilterRail gender={gender} onFilterChange={setFilters} />
       
       <div className="min-h-screen bg-surface">
          <div className="container mx-auto px-4 py-8 md:py-12">
-            {children}
+            {React.Children.map(children, child => {
+              if (React.isValidElement(child)) {
+                return React.cloneElement(child as React.ReactElement<{ filters?: Record<string, string[]> }>, { filters });
+              }
+              return child;
+            })}
          </div>
       </div>
     </>

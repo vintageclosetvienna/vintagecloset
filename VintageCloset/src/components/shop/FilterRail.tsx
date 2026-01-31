@@ -94,9 +94,10 @@ const FILTERS = [
 
 interface FilterRailProps {
   gender?: 'women' | 'men' | 'unisex';
+  onFilterChange?: (filters: Record<string, string[]>) => void;
 }
 
-export function FilterRail({ gender = 'unisex' }: FilterRailProps) {
+export function FilterRail({ gender = 'unisex', onFilterChange }: FilterRailProps) {
   const [activeDrawer, setActiveDrawer] = useState<string | null>(null);
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({});
 
@@ -116,12 +117,15 @@ export function FilterRail({ gender = 'unisex' }: FilterRailProps) {
       const updated = current.includes(value) 
         ? current.filter(item => item !== value)
         : [...current, value];
-      return { ...prev, [category]: updated };
+      const newFilters = { ...prev, [category]: updated };
+      onFilterChange?.(newFilters);
+      return newFilters;
     });
   };
 
   const clearAllFilters = () => {
     setSelectedFilters({});
+    onFilterChange?.({});
   };
 
   const hasActiveFilters = Object.values(selectedFilters).some(arr => arr.length > 0);
@@ -307,7 +311,9 @@ export function FilterRail({ gender = 'unisex' }: FilterRailProps) {
                     if (activeDrawer === 'all') {
                       clearAllFilters();
                     } else {
-                      setSelectedFilters(prev => ({ ...prev, [activeDrawer]: [] }));
+                      const newFilters = { ...selectedFilters, [activeDrawer]: [] };
+                      setSelectedFilters(newFilters);
+                      onFilterChange?.(newFilters);
                     }
                   }}
                 >

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Reveal } from '@/components/shared/Reveal';
 import { Button } from '@/components/ui/Button';
 import { ArrowRight } from '@phosphor-icons/react';
@@ -23,12 +24,16 @@ export function CallToAction() {
                 </p>
                 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4 md:gap-6 pt-4">
-                   <Button size="lg" className="w-full sm:w-auto min-w-[180px] h-14 text-base font-bold shadow-lg hover:shadow-accent-start/20">
-                      Shop Now
-                   </Button>
-                   <Button variant="secondary" size="lg" className="w-full sm:w-auto min-w-[180px] h-14 text-base font-bold bg-white/5 text-white border-white/10 hover:bg-white/10 hover:border-white/30 backdrop-blur-sm">
-                      Visit Store <ArrowRight className="ml-2" />
-                   </Button>
+                   <Link href="/unisex">
+                     <Button size="lg" className="w-full sm:w-auto min-w-[180px] h-14 text-base font-bold shadow-lg hover:shadow-accent-start/20">
+                        Shop Now
+                     </Button>
+                   </Link>
+                   <Link href="/visit">
+                     <Button variant="secondary" size="lg" className="w-full sm:w-auto min-w-[180px] h-14 text-base font-bold bg-white/5 text-white border-white/10 hover:bg-white/10 hover:border-white/30 backdrop-blur-sm">
+                        Visit Store <ArrowRight className="ml-2" />
+                     </Button>
+                   </Link>
                 </div>
              </div>
           </Reveal>

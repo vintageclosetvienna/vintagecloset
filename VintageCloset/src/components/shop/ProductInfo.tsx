@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { Heart, ShoppingBag, CreditCard, Check } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/Button';
 import { Product, getDiscountedPrice } from '@/lib/data';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/lib/cart';
 
@@ -157,7 +156,7 @@ export function ProductInfo({ product }: { product: Product }) {
        {/* Store Info */}
        <div className="pt-6 border-t border-hairline">
           <p className="text-sm text-muted leading-relaxed">
-             Questions? <Link href="/contact" className="font-bold text-accent-start hover:underline">Get in touch</Link> or visit us at our Vienna flagship.
+             Questions? <a href="mailto:vintage.closet.vienna@gmail.com" className="font-bold text-accent-start hover:underline">Get in touch</a> or visit us at our Vienna flagship.
           </p>
        </div>
     </div>

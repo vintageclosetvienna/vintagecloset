@@ -1,10 +1,31 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { ProductCard } from '@/components/shop/ProductCard';
-import { Product, getProducts, getProductsByGender } from '@/lib/data';
+import { Product, getProducts, getProductsByGender, getPriceAsNumber } from '@/lib/data';
 
-export function ProductGrid({ filter }: { filter?: 'men' | 'women' | 'unisex' }) {
+interface ProductGridProps {
+  filter?: 'men' | 'women' | 'unisex';
+  filters?: Record<string, string[]>;
+}
+
+// Helper function to check if price matches a range
+function matchPriceRange(price: number, range: string): boolean {
+  switch (range) {
+    case 'Under €50':
+      return price < 50;
+    case '€50 – €100':
+      return price >= 50 && price <= 100;
+    case '€100 – €200':
+      return price > 100 && price <= 200;
+    case '€200+':
+      return price > 200;
+    default:
+      return true;
+  }
+}
+
+export function ProductGrid({ filter, filters }: ProductGridProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -41,6 +62,39 @@ export function ProductGrid({ filter }: { filter?: 'men' | 'women' | 'unisex' })
     fetchProducts();
   }, [filter]);
 
+  // Apply filters to products
+  const filteredProducts = useMemo(() => {
+    let result = products;
+
+    // Filter by category (skip "All")
+    if (filters?.category?.length && !filters.category.includes('All')) {
+      result = result.filter(p => 
+        filters.category.some(cat => 
+          p.category.toLowerCase() === cat.toLowerCase()
+        )
+      );
+    }
+
+    // Filter by size
+    if (filters?.size?.length) {
+      result = result.filter(p => 
+        filters.size.some(size => 
+          p.size.toUpperCase() === size.toUpperCase()
+        )
+      );
+    }
+
+    // Filter by price
+    if (filters?.price?.length) {
+      result = result.filter(p => {
+        const price = getPriceAsNumber(p.price);
+        return filters.price.some(range => matchPriceRange(price, range));
+      });
+    }
+
+    return result;
+  }, [products, filters]);
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
@@ -64,9 +118,18 @@ export function ProductGrid({ filter }: { filter?: 'men' | 'women' | 'unisex' })
     );
   }
 
+  if (filteredProducts.length === 0) {
+    return (
+      <div className="text-center py-16">
+        <p className="text-muted text-lg">No products match your filters.</p>
+        <p className="text-sm text-muted mt-2">Try adjusting your filter selections.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8 auto-rows-fr">
-      {products.map((product, idx) => (
+      {filteredProducts.map((product, idx) => (
         <ProductCard key={product.id} product={product} priority={idx < 4} />
       ))}
     </div>
