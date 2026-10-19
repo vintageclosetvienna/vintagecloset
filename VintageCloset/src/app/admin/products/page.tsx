@@ -17,29 +17,9 @@ import { DataTable, FormSelect, FormInput, ImageUpload } from '@/components/admi
 import { Button } from '@/components/ui/Button';
 import { Product, getDiscountedPrice } from '@/lib/data';
 import { supabase, isSupabaseConfigured, DbProduct } from '@/lib/supabase';
+import { CATEGORIES_BY_GENDER, AiProductDetails } from '@/lib/product-categories';
 
 const DISCOUNT_OPTIONS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50];
-
-// Categories based on gender selection
-const CATEGORIES_BY_GENDER = {
-  women: [
-    'Tops', 'Blouses', 'T-Shirts', 'Sweaters', 'Cardigans', 'Dresses', 'Skirts',
-    'Pants', 'Jeans', 'Shorts', 'Blazers', 'Coats', 'Jackets', 'Knitwear',
-    'Loungewear', 'Activewear', 'Swimwear', 'Lingerie', 'Accessories', 'Bags',
-    'Shoes', 'Jewelry', 'Scarves', 'Denim', 'Outerwear'
-  ],
-  men: [
-    'T-Shirts', 'Shirts', 'Polos', 'Sweaters', 'Hoodies', 'Sweatshirts',
-    'Pants', 'Jeans', 'Shorts', 'Chinos', 'Blazers', 'Suits', 'Coats',
-    'Jackets', 'Jerseys', 'Knitwear', 'Activewear', 'Swimwear', 'Underwear',
-    'Accessories', 'Bags', 'Shoes', 'Watches', 'Hats', 'Denim', 'Outerwear', 'Footwear'
-  ],
-  unisex: [
-    'T-Shirts', 'Sweatshirts', 'Hoodies', 'Sweaters', 'Pants', 'Jeans',
-    'Shorts', 'Jackets', 'Coats', 'Outerwear', 'Sets', 'Tracksuits',
-    'Activewear', 'Loungewear', 'Accessories', 'Bags', 'Shoes', 'Hats', 'Scarves', 'Knitwear'
-  ],
-};
 
 const GENDER_OPTIONS = [
   { value: 'women', label: 'Women' },
@@ -115,17 +95,17 @@ function EditProductModal({
   // Get available categories based on selected gender
   const availableCategories = useMemo(() => {
     const categories = CATEGORIES_BY_GENDER[formData.gender as keyof typeof CATEGORIES_BY_GENDER] || [];
-    return categories.sort().map(cat => ({ value: cat, label: cat }));
+    return [...categories].sort().map(cat => ({ value: cat, label: cat }));
   }, [formData.gender]);
 
   const updateField = (field: string, value: string | number | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Generate description with GPT
+  // Rewrite the description from the photos; other fields are only filled when empty
   const handleGenerateDescription = async () => {
-    if (!formData.title) {
-      setGenerateError('Bitte gib zuerst einen Produktnamen ein.');
+    if (!formData.title && formData.images.length === 0) {
+      setGenerateError('Bitte lade zuerst Fotos hoch oder gib einen Produktnamen ein.');
       return;
     }
 
@@ -146,8 +126,16 @@ function EditProductModal({
 
       if (data.error) {
         setGenerateError(data.error);
-      } else if (data.description) {
-        updateField('description', data.description);
+      } else {
+        const ai = data as AiProductDetails;
+        const categoryFits = ai.gender === formData.gender && ai.category;
+        setFormData(prev => ({
+          ...prev,
+          description: ai.description || prev.description,
+          size: prev.size || ai.size,
+          era: prev.era || ai.era,
+          category: prev.category || (categoryFits ? ai.category : ''),
+        }));
       }
     } catch (error) {
       setGenerateError('Fehler bei der Verbindung zur API.');
@@ -269,7 +257,7 @@ function EditProductModal({
                 <button
                   type="button"
                   onClick={handleGenerateDescription}
-                  disabled={isGenerating || !formData.title}
+                  disabled={isGenerating || (!formData.title && formData.images.length === 0)}
                   className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-accent-start hover:bg-accent-start/10 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isGenerating ? (

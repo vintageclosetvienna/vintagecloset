@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Sparkle } from '@phosphor-icons/react';
@@ -12,27 +12,7 @@ import {
 } from '@/components/admin';
 import { Button } from '@/components/ui/Button';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-
-// Categories based on gender selection
-const CATEGORIES_BY_GENDER = {
-  women: [
-    'Tops', 'Blouses', 'T-Shirts', 'Sweaters', 'Cardigans', 'Dresses', 'Skirts',
-    'Pants', 'Jeans', 'Shorts', 'Blazers', 'Coats', 'Jackets', 'Knitwear',
-    'Loungewear', 'Activewear', 'Swimwear', 'Lingerie', 'Accessories', 'Bags',
-    'Shoes', 'Jewelry', 'Scarves', 'Denim', 'Outerwear'
-  ],
-  men: [
-    'T-Shirts', 'Shirts', 'Polos', 'Sweaters', 'Hoodies', 'Sweatshirts',
-    'Pants', 'Jeans', 'Shorts', 'Chinos', 'Blazers', 'Suits', 'Coats',
-    'Jackets', 'Jerseys', 'Knitwear', 'Activewear', 'Swimwear', 'Underwear',
-    'Accessories', 'Bags', 'Shoes', 'Watches', 'Hats', 'Denim', 'Outerwear', 'Footwear'
-  ],
-  unisex: [
-    'T-Shirts', 'Sweatshirts', 'Hoodies', 'Sweaters', 'Pants', 'Jeans',
-    'Shorts', 'Jackets', 'Coats', 'Outerwear', 'Sets', 'Tracksuits',
-    'Activewear', 'Loungewear', 'Accessories', 'Bags', 'Shoes', 'Hats', 'Scarves', 'Knitwear'
-  ],
-};
+import { CATEGORIES_BY_GENDER, AiProductDetails } from '@/lib/product-categories';
 
 const GENDER_OPTIONS = [
   { value: 'women', label: 'Women' },
@@ -106,10 +86,10 @@ export default function NewProductPage() {
     }
   };
 
-  // Generate description with AI
-  const handleGenerateDescription = async () => {
-    if (!formData.title) {
-      setGenerateError('Please enter a product name first.');
+  // Recognise the piece from its photos and fill in every field except the price
+  const handleAutofill = async () => {
+    if (!formData.title && formData.images.length === 0) {
+      setGenerateError('Upload photos or enter a product name first.');
       return;
     }
 
@@ -130,8 +110,17 @@ export default function NewProductPage() {
 
       if (data.error) {
         setGenerateError(data.error);
-      } else if (data.description) {
-        updateField('description', data.description);
+      } else {
+        const ai = data as AiProductDetails;
+        setFormData(prev => ({
+          ...prev,
+          title: ai.title || prev.title,
+          description: ai.description || prev.description,
+          size: ai.size || prev.size,
+          era: ai.era || prev.era,
+          genders: ai.gender ? [ai.gender] : prev.genders,
+          category: ai.category || (ai.gender ? '' : prev.category),
+        }));
       }
     } catch (error) {
       setGenerateError('Failed to connect to AI service.');
@@ -139,6 +128,15 @@ export default function NewProductPage() {
       setIsGenerating(false);
     }
   };
+
+  // Run the autofill once on its own after the first photos finish uploading
+  const hasAutoFilled = useRef(false);
+  useEffect(() => {
+    if (hasAutoFilled.current || formData.images.length === 0 || formData.title) return;
+    hasAutoFilled.current = true;
+    handleAutofill();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.images.length]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -246,8 +244,8 @@ export default function NewProductPage() {
               <label className="text-sm font-medium text-ink">Description</label>
               <button
                 type="button"
-                onClick={handleGenerateDescription}
-                disabled={isGenerating || !formData.title}
+                onClick={handleAutofill}
+                disabled={isGenerating || (!formData.title && formData.images.length === 0)}
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-accent-start hover:bg-accent-start/10 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Generate with AI"
               >
