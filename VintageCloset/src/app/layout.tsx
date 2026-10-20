@@ -6,11 +6,27 @@ import SmoothScroll from "@/components/providers/SmoothScroll";
 import { KeyboardShortcuts } from "@/components/providers/KeyboardShortcuts";
 import { ConditionalLayout } from "@/components/layout/ConditionalLayout";
 import { CartProvider } from "@/lib/cart";
+import { SITE_URL, SITE_NAME, SITE_DESCRIPTION } from "@/lib/site";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "Vintage Closet | Vienna",
   description: "Modern vintage store in Vienna.",
+  applicationName: SITE_NAME,
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    title: "Vintage Closet | Vienna",
+    description: SITE_DESCRIPTION,
+    url: "/",
+    locale: "en_AT",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Vintage Closet | Vienna",
+    description: SITE_DESCRIPTION,
+  },
 };
 
 export default function RootLayout({

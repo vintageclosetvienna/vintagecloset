@@ -75,3 +75,37 @@
     text-shadow: 0.05em 0.07em 0 var(--brand-plum);
   }
 }
+
+/* Slow zoom and drift for campaign photos */
+@keyframes kenburns {
+  0% { transform: scale(1) translate3d(0, 0, 0); }
+  100% { transform: scale(1.08) translate3d(-1.5%, -1%, 0); }
+}
+.animate-kenburns {
+  animation: kenburns 16s ease-in-out infinite alternate;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-kenburns { animation: none; }
+}
+
+/* Endless sliding rows (menu "Just in"): faded edges, pause on hover/focus */
+@keyframes marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+.marquee-fade {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 14%, #000 86%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 14%, #000 86%, transparent);
+}
+.marquee-track {
+  animation: marquee 24s linear infinite;
+}
+.marquee-fade:hover .marquee-track,
+.marquee-fade:focus-within .marquee-track {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track { animation: none; }
+  .marquee-fade { overflow-x: auto; }
+}

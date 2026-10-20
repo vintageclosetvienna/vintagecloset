@@ -412,41 +412,64 @@ function MenuContent({ tab, stock, onNavigate, onSearch }: MenuContentProps) {
             Just in
             <Count value={stock?.newest.length} />
           </p>
-          <div
-            className="-mx-6 flex snap-x snap-mandatory scroll-pl-6 gap-3 overflow-x-auto px-6 pb-1 md:-mx-10 md:scroll-pl-10 md:px-10"
-            onPointerDownCapture={e => e.stopPropagation()}
-          >
-            {stock === null
-              ? Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="aspect-[3/4] w-[104px] shrink-0 animate-pulse rounded-md bg-ink/[0.06]" />
-                ))
-              : stock.newest.map(product => (
-                  <Link
-                    key={product.id}
-                    href={`/product/${product.slug}`}
-                    onClick={onNavigate}
-                    className="group w-[104px] shrink-0 snap-start"
-                  >
-                    <div className="relative aspect-[3/4] overflow-hidden rounded-md bg-ink/[0.06]">
-                      {product.image && (
-                        <Image
-                          src={product.image}
-                          alt={product.title}
-                          fill
-                          sizes="104px"
-                          className="object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                      )}
-                    </div>
-                    <p className="mt-1.5 truncate text-xs text-ink">{product.title}</p>
-                    <p className="text-xs text-muted">
-                      {product.discount ? getDiscountedPrice(product.price, product.discount) : product.price}
-                    </p>
-                  </Link>
-                ))}
-          </div>
+          {stock === null ? (
+            <div className="flex gap-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="aspect-[3/4] w-[104px] shrink-0 animate-pulse rounded-md bg-ink/[0.06]" />
+              ))}
+            </div>
+          ) : (
+            <JustInMarquee products={stock.newest} onNavigate={onNavigate} />
+          )}
         </div>
       )}
+    </div>
+  );
+}
+
+// Endless sliding row with faded edges; pauses on hover or keyboard focus
+function JustInMarquee({ products, onNavigate }: { products: Product[]; onNavigate: () => void }) {
+  // Repeat the set until one half is wider than the menu, then render it twice for a seamless loop
+  const repeats = Math.max(1, Math.ceil(6 / products.length));
+  const half = Array.from({ length: repeats }, () => products).flat();
+  const items = [...half, ...half];
+
+  return (
+    <div
+      className="marquee-fade -mx-6 overflow-hidden md:-mx-10"
+      onPointerDownCapture={e => e.stopPropagation()}
+    >
+      <div
+        className="marquee-track flex w-max"
+        style={{ animationDuration: `${half.length * 4}s` }}
+      >
+        {items.map((product, i) => (
+          <Link
+            key={`${product.id}-${i}`}
+            href={`/product/${product.slug}`}
+            onClick={onNavigate}
+            aria-hidden={i >= half.length}
+            tabIndex={i >= half.length ? -1 : undefined}
+            className="group mr-3 w-[104px] shrink-0"
+          >
+            <div className="relative aspect-[3/4] overflow-hidden rounded-md bg-ink/[0.06]">
+              {product.image && (
+                <Image
+                  src={product.image}
+                  alt={i >= half.length ? '' : product.title}
+                  fill
+                  sizes="104px"
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+              )}
+            </div>
+            <p className="mt-1.5 truncate text-xs text-ink">{product.title}</p>
+            <p className="text-xs text-muted">
+              {product.discount ? getDiscountedPrice(product.price, product.discount) : product.price}
+            </p>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }

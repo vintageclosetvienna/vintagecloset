@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { motion, useReducedMotion, useSpring } from 'framer-motion';
 import Link from 'next/link';
 import { Plus, Check, ArrowRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
@@ -39,6 +40,38 @@ function buildTiles(products: Product[], campaign: string[]): Tile[] {
   return tiles;
 }
 
+// Campaign shot that slowly zooms (Ken Burns) and drifts against the mouse
+function CampaignTile({ image, className }: { image: string; className?: string }) {
+  const reduceMotion = useReducedMotion();
+  const ref = useRef<HTMLDivElement>(null);
+  const x = useSpring(0, { stiffness: 80, damping: 20 });
+  const y = useSpring(0, { stiffness: 80, damping: 20 });
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (e.pointerType !== 'mouse' || reduceMotion || !ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    x.set(-((e.clientX - rect.left) / rect.width - 0.5) * 24);
+    y.set(-((e.clientY - rect.top) / rect.height - 0.5) * 24);
+  };
+
+  return (
+    <Reveal direction="scale" width="100%" className={className}>
+      <div
+        ref={ref}
+        onPointerMove={onPointerMove}
+        onPointerLeave={() => { x.set(0); y.set(0); }}
+        className="absolute inset-0 overflow-hidden"
+      >
+        <motion.div style={{ x, y }} className="absolute -inset-4">
+          <div className="absolute inset-0 animate-kenburns">
+            <SafeImage src={image} alt="Vintage Closet campaign" fill sizes="75vw" className="object-cover" />
+          </div>
+        </motion.div>
+      </div>
+    </Reveal>
+  );
+}
+
 function ArrivalCard({ product, priority }: { product: Product; priority?: boolean }) {
   const { addItem, items } = useCart();
   const isInCart = items.some(item => item.id === product.id);
@@ -66,7 +99,7 @@ function ArrivalCard({ product, priority }: { product: Product; priority?: boole
             alt={product.title}
             fill
             sizes="(min-width: 1024px) 25vw, 50vw"
-            className={cn('object-cover transition-opacity duration-500', hoverImage && 'group-hover:opacity-0')}
+            className={cn('object-cover transition-[opacity,transform] duration-700 group-hover:scale-[1.04]', hoverImage && 'group-hover:opacity-0')}
             priority={priority}
           />
           {hoverImage && (
@@ -75,7 +108,7 @@ function ArrivalCard({ product, priority }: { product: Product; priority?: boole
               alt=""
               fill
               sizes="(min-width: 1024px) 25vw, 50vw"
-              className="object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+              className="object-cover opacity-0 transition-[opacity,transform] duration-700 group-hover:opacity-100 group-hover:scale-[1.04]"
             />
           )}
           <span className="absolute top-3 left-3 text-[11px] text-ink">New in</span>
@@ -176,19 +209,18 @@ export function NewArrivals({ limit, asPage = false }: NewArrivalsProps) {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-2 gap-y-6 md:gap-x-4 md:gap-y-8">
             {tiles.map((tile, i) =>
               tile.kind === 'campaign' ? (
-                <Reveal
+                <CampaignTile
                   key={`c-${i}`}
-                  direction="none"
-                  width="100%"
+                  image={tile.image}
                   className={cn(
                     'relative col-span-2 aspect-[16/9] lg:aspect-auto lg:min-h-full overflow-hidden bg-gray-100',
                     tile.span === 3 ? 'lg:col-span-3' : 'lg:col-span-2'
                   )}
-                >
-                  <SafeImage src={tile.image} alt="Vintage Closet campaign" fill sizes="75vw" className="object-cover" />
-                </Reveal>
+                />
               ) : (
-                <ArrivalCard key={tile.product.id} product={tile.product} priority={i < 3} />
+                <Reveal key={tile.product.id} width="100%" delay={(i % 4) * 0.06}>
+                  <ArrivalCard product={tile.product} priority={i < 3} />
+                </Reveal>
               )
             )}
           </div>

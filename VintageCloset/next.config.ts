@@ -1,5 +1,9 @@
 import type { NextConfig } from "next";
 
+// Main domain (set NEXT_PUBLIC_SITE_URL in Vercel); the old Vercel address then forwards to it
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '');
+const VERCEL_HOST = 'vintagecloset.vercel.app';
+
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
@@ -16,6 +20,18 @@ const nextConfig: NextConfig = {
         pathname: '/storage/v1/object/public/**',
       },
     ],
+  },
+  // Forward the old Vercel address to the main domain; /api stays so Stripe webhooks keep working
+  async redirects() {
+    if (!SITE_URL || new URL(SITE_URL).host === VERCEL_HOST) return [];
+    return [
+      {
+        source: '/:path((?!api/).*)',
+        has: [{ type: 'host', value: VERCEL_HOST }],
+        destination: `${SITE_URL}/:path`,
+        permanent: true,
+      },
+    ];
   },
   // Basic security headers for every page (no CSP, so Stripe and Supabase keep working)
   async headers() {

@@ -38,7 +38,7 @@ export function CalloutBanner() {
              </span>
           </div>
           <Link href="/women">
-            <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 border-white/20 hover:border-white h-8 text-xs px-4 ml-4 flex-shrink-0">
+            <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 border-white/20 hover:border-white h-8 text-xs px-4 ml-4 flex-shrink-0 whitespace-nowrap">
                Shop Now
             </Button>
           </Link>
