@@ -6,7 +6,7 @@ import SmoothScroll from "@/components/providers/SmoothScroll";
 import { KeyboardShortcuts } from "@/components/providers/KeyboardShortcuts";
 import { ConditionalLayout } from "@/components/layout/ConditionalLayout";
 import { CartProvider } from "@/lib/cart";
-import { SITE_URL, SITE_NAME, SITE_DESCRIPTION } from "@/lib/site";
+import { SITE_URL, SITE_NAME, SITE_DESCRIPTION, SOCIAL_LINKS } from "@/lib/site";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -29,6 +29,16 @@ export const metadata: Metadata = {
   },
 };
 
+// Tells search engines which social profiles belong to the shop
+const ORGANIZATION_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "ClothingStore",
+  name: SITE_NAME,
+  url: SITE_URL,
+  logo: `${SITE_URL}/brand/vintage-closet-logo.png`,
+  sameAs: Object.values(SOCIAL_LINKS),
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -39,6 +49,10 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${spaceGrotesk.variable} antialiased bg-surface text-ink font-sans relative min-h-screen flex flex-col`}
       >
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(ORGANIZATION_JSON_LD) }}
+        />
         <CartProvider>
           <SmoothScroll />
           <KeyboardShortcuts />

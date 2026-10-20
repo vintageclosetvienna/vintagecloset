@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { InstagramLogo, FacebookLogo, TiktokLogo } from '@phosphor-icons/react';
+import { InstagramLogo, FacebookLogo, TiktokLogo, YoutubeLogo } from '@phosphor-icons/react';
+import { SOCIAL_LINKS } from '@/lib/site';
 import { Logo } from '@/components/ui/Logo';
 
 export function Footer() {
@@ -50,9 +51,10 @@ export function Footer() {
             <h4 className="font-display font-bold text-ink">Follow Us</h4>
             <p className="text-sm text-muted">Stay updated on new arrivals and events.</p>
             <div className="flex items-center space-x-4">
-              <a href="https://www.instagram.com/vintage_closet_vienna" target="_blank" rel="noopener noreferrer" className="text-muted hover:text-accent-start transition-colors"><InstagramLogo size={20} /></a>
-              <a href="https://www.tiktok.com/@vintage_closet_vienna" target="_blank" rel="noopener noreferrer" className="text-muted hover:text-accent-start transition-colors"><TiktokLogo size={20} /></a>
-              <a href="https://www.facebook.com/profile.php?id=61567529122786" target="_blank" rel="noopener noreferrer" className="text-muted hover:text-accent-start transition-colors"><FacebookLogo size={20} /></a>
+              <a href={SOCIAL_LINKS.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-muted hover:text-accent-start transition-colors"><InstagramLogo size={20} /></a>
+              <a href={SOCIAL_LINKS.youtube} target="_blank" rel="noopener noreferrer" aria-label="YouTube" className="text-muted hover:text-accent-start transition-colors"><YoutubeLogo size={20} /></a>
+              <a href={SOCIAL_LINKS.tiktok} target="_blank" rel="noopener noreferrer" aria-label="TikTok" className="text-muted hover:text-accent-start transition-colors"><TiktokLogo size={20} /></a>
+              <a href={SOCIAL_LINKS.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="text-muted hover:text-accent-start transition-colors"><FacebookLogo size={20} /></a>
             </div>
           </div>
         </div>

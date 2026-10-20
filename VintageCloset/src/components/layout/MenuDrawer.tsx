@@ -16,11 +16,16 @@ import {
   Hoodie,
   Handbag,
   Storefront,
+  InstagramLogo,
+  YoutubeLogo,
+  FacebookLogo,
+  TiktokLogo,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { CATEGORIES_BY_GENDER, type ProductGender } from '@/lib/product-categories';
 import { getProducts, getDiscountedPrice, type Product } from '@/lib/data';
+import { SOCIAL_LINKS } from '@/lib/site';
 
 export type MenuTab = ProductGender;
 
@@ -403,6 +408,18 @@ function MenuContent({ tab, stock, onNavigate, onSearch }: MenuContentProps) {
           Visit the Store
         </Link>
         <Link href="/terms" onClick={onNavigate} className={smallLink}>Shipping &amp; Terms</Link>
+        <div className="flex items-center gap-4 pt-3 text-ink/70">
+          {[
+            { href: SOCIAL_LINKS.instagram, label: 'Instagram', Icon: InstagramLogo },
+            { href: SOCIAL_LINKS.youtube, label: 'YouTube', Icon: YoutubeLogo },
+            { href: SOCIAL_LINKS.tiktok, label: 'TikTok', Icon: TiktokLogo },
+            { href: SOCIAL_LINKS.facebook, label: 'Facebook', Icon: FacebookLogo },
+          ].map(({ href, label, Icon }) => (
+            <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label} className="transition-colors hover:text-brand-plum">
+              <Icon size={20} />
+            </a>
+          ))}
+        </div>
       </nav>
 
       {/* Newest pieces of this tab */}
