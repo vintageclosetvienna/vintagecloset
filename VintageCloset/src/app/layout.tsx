@@ -4,6 +4,7 @@ import SmoothScroll from "@/components/providers/SmoothScroll";
 import { KeyboardShortcuts } from "@/components/providers/KeyboardShortcuts";
 import { ConditionalLayout } from "@/components/layout/ConditionalLayout";
 import { CartProvider } from "@/lib/cart";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -29,6 +30,7 @@ export default function RootLayout({
             {children}
           </ConditionalLayout>
         </CartProvider>
+        <SpeedInsights />
       </body>
     </html>
   );
