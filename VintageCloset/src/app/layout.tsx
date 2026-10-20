@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { inter, spaceGrotesk } from "@/lib/fonts";
 import SmoothScroll from "@/components/providers/SmoothScroll";
 import { KeyboardShortcuts } from "@/components/providers/KeyboardShortcuts";
@@ -29,6 +31,9 @@ export default function RootLayout({
             {children}
           </ConditionalLayout>
         </CartProvider>
+        {/* Vercel Web Analytics + Speed Insights (cookieless, nothing visible on the page) */}
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

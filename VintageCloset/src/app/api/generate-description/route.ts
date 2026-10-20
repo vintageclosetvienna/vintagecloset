@@ -7,6 +7,9 @@ import {
   ProductGender,
 } from '@/lib/product-categories';
 
+// Photo recognition plus web search can take a minute or more; give it room
+export const maxDuration = 300;
+
 // gpt-5-chat-latest was shut down by OpenAI on 2026-07-23; gpt-5.6-sol is the listed replacement
 const DEFAULT_MODEL = 'gpt-5.6-sol';
 
