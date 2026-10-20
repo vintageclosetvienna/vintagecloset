@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
-// Main domain (set NEXT_PUBLIC_SITE_URL in Vercel); the old Vercel address then forwards to it
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '');
+// Main domain (same default as src/lib/site.ts); the old Vercel address forwards to it
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.vintagecloset.app').replace(/\/$/, '');
 const VERCEL_HOST = 'vintagecloset.vercel.app';
 
 const nextConfig: NextConfig = {

@@ -1,6 +1,6 @@
-// Public address of the shop. Set NEXT_PUBLIC_SITE_URL in Vercel (Production) to the main domain,
-// e.g. https://vintagecloset.at; until then the Vercel address is used.
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://vintagecloset.vercel.app').replace(/\/$/, '');
+// Public address of the shop (main domain; vintagecloset.app redirects to www in Vercel).
+// NEXT_PUBLIC_SITE_URL can override it, e.g. for a staging copy.
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.vintagecloset.app').replace(/\/$/, '');
 
 export const SITE_NAME = 'Vintage Closet Vienna';
 export const SITE_DESCRIPTION =
