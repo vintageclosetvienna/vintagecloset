@@ -8,6 +8,9 @@
   --color-accent-start: var(--accent-start);
   --color-accent-end: var(--accent-end);
   --color-hairline: var(--hairline);
+  --color-brand-teal: var(--brand-teal);
+  --color-brand-teal-bright: var(--brand-teal-bright);
+  --color-brand-plum: var(--brand-plum);
   
   --font-sans: var(--font-inter);
   --font-display: var(--font-space);
@@ -58,5 +61,17 @@
     z-index: 9999;
     opacity: 0.02;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  }
+}
+
+/* Brand sticker lettering like the brand kit graphics: teal fill, plum outline and plum drop shadow */
+@layer components {
+  .sticker-text {
+    color: var(--brand-teal);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    -webkit-text-stroke: 0.08em var(--brand-plum);
+    paint-order: stroke fill;
+    text-shadow: 0.05em 0.07em 0 var(--brand-plum);
   }
 }

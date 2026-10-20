@@ -20,3 +20,10 @@
 }
 
 
+
+/* Vintage Closet brand kit: teal letters, plum outline (see BRAND.md) */
+:root {
+  --brand-teal: #4CC2BA;
+  --brand-teal-bright: #01DBCA;
+  --brand-plum: #602140;
+}

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Sliders, X, Check, CaretDown } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
@@ -92,6 +93,17 @@ const FILTERS = [
   { id: 'price', label: 'Price', options: ['Under €50', '€50 – €100', '€100 – €200', '€200+'] },
 ];
 
+// Reads ?category=Jeans or ?category=Jeans,Pants (links from the menu) and reports it upward
+function UrlCategorySync({ onCategories }: { onCategories: (categories: string[]) => void }) {
+  const param = useSearchParams().get('category');
+
+  useEffect(() => {
+    onCategories(param ? param.split(',').map(c => c.trim()).filter(Boolean) : []);
+  }, [param, onCategories]);
+
+  return null;
+}
+
 interface FilterRailProps {
   gender?: 'women' | 'men' | 'unisex';
   onFilterChange?: (filters: Record<string, string[]>) => void;
@@ -100,6 +112,22 @@ interface FilterRailProps {
 export function FilterRail({ gender = 'unisex', onFilterChange }: FilterRailProps) {
   const [activeDrawer, setActiveDrawer] = useState<string | null>(null);
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({});
+  const selectedFiltersRef = useRef(selectedFilters);
+
+  useEffect(() => {
+    selectedFiltersRef.current = selectedFilters;
+  }, [selectedFilters]);
+
+  // Apply the category from the URL when it changes (menu links), keeping the other filters
+  const applyUrlCategories = useCallback((categories: string[]) => {
+    const current = selectedFiltersRef.current;
+    const currentCategories = current.category || [];
+    if (currentCategories.length === categories.length && currentCategories.every((c, i) => c === categories[i])) return;
+    const next = { ...current, category: categories };
+    selectedFiltersRef.current = next;
+    setSelectedFilters(next);
+    onFilterChange?.(next);
+  }, [onFilterChange]);
 
   // Get category options based on gender
   const categoryOptions = CATEGORIES_BY_GENDER[gender];
@@ -132,6 +160,10 @@ export function FilterRail({ gender = 'unisex', onFilterChange }: FilterRailProp
 
   return (
     <>
+      <Suspense fallback={null}>
+        <UrlCategorySync onCategories={applyUrlCategories} />
+      </Suspense>
+
       {/* Sticky Filter Rail */}
       <div className="sticky top-[calc(var(--header-height)-1px)] z-30 bg-surface/95 backdrop-blur-md border-b border-hairline">
         <div className="container mx-auto px-4 py-3">
