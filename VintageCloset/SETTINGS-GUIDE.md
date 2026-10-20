@@ -52,3 +52,8 @@ Short how-tos for everything added since October 2026. Code changes are one line
 ## Vercel Pro
 - Analytics and Speed Insights: Vercel → project → **Analytics** / **Speed Insights**.
 - Server region (Dublin, next to the database): `vercel.json` → `regions`.
+
+## Database security (Supabase)
+- Private tables (orders, pickup codes, newsletter) can't be read with the public website key; only logged-in admins and the server can. Rules live in `supabase/*.sql`.
+- Check anytime: Supabase → project **vintageclosetvienna → Advisors → Security Advisor**. Anything marked *Error* needs fixing; ask Claude with the screenshot.
+- Recommended one-click setting: Supabase → **Authentication → Sign In / Providers → Email → Leaked password protection** → on (blocks admin passwords known from data leaks).
