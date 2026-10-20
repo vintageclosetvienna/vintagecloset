@@ -35,6 +35,13 @@ export default function CheckoutPage() {
   
   // Discount code state
   const [discountCode, setDiscountCode] = useState('');
+
+  // Prefill the newsletter welcome code saved on this device after confirming
+  useEffect(() => {
+    let saved: string | null = null;
+    try { saved = localStorage.getItem('vc-welcome-code'); } catch { /* storage blocked */ }
+    if (saved) setDiscountCode(prev => prev || saved);
+  }, []);
   const [isValidatingCode, setIsValidatingCode] = useState(false);
   const [appliedDiscount, setAppliedDiscount] = useState<{
     code: string;

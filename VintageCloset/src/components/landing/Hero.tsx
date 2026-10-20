@@ -225,18 +225,19 @@ export function Hero() {
 
       {/* Centered headline under the photos */}
       <div className="relative z-20 container mx-auto px-4 md:px-6 mt-5 md:mt-6 text-center space-y-2 md:space-y-3">
-        <Reveal delay={0.1} className="mx-auto">
+        {/* Animate on load (not on scroll): the headline sits low in the first screen */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.3 }} className="mx-auto w-fit">
           <h1 className="font-display font-bold text-4xl md:text-5xl lg:text-6xl leading-[0.95] tracking-tight text-ink">
             Vintage Closet<br className="md:hidden" /> <span className="text-gradient">Vienna.</span>
           </h1>
-        </Reveal>
+        </motion.div>
 
-        <Reveal delay={0.2} className="mx-auto">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.4 }} className="mx-auto w-fit">
           <p className="text-muted text-sm md:text-[15px] leading-relaxed max-w-[30ch] md:max-w-[44ch] mx-auto">
             Curated archive of 90s streetwear and luxury essentials.
             Authentic pieces sourced globally, housed in Vienna.
           </p>
-        </Reveal>
+        </motion.div>
       </div>
 
       {/* Collection shortcuts pinned to the bottom corners */}

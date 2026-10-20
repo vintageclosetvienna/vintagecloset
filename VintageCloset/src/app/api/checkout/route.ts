@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { getProductById, getPriceAsNumber } from '@/lib/data';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { validateDiscountCode, useDiscountCode, calculateDiscount } from '@/lib/discount-codes';
+import { newsletterDb } from '@/lib/newsletter';
 
 interface ShippingInfo {
   customerName: string;
@@ -139,6 +140,22 @@ export async function POST(request: NextRequest) {
         product.id,
         priceAfterProductDiscount
       );
+
+      // Newsletter welcome codes only work with the email they were sent to
+      if (validation.isValid && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        const { data: codeRow } = await newsletterDb()
+          .from('discount_codes')
+          .select('restricted_email')
+          .ilike('code', discountCode.trim())
+          .maybeSingle();
+        const restrictedEmail = codeRow?.restricted_email as string | null | undefined;
+        if (restrictedEmail && restrictedEmail !== (customerEmail || '').trim().toLowerCase()) {
+          return NextResponse.json(
+            { error: 'This code only works with the email address it was sent to.' },
+            { status: 400 }
+          );
+        }
+      }
 
       if (validation.isValid && validation.discountType && validation.discountValue !== null) {
         const discountAmount = calculateDiscount(
