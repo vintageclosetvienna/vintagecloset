@@ -93,7 +93,7 @@ function HeroDeck({ images }: { images: DeckImage[] }) {
         style={{ rotateX, rotateY, transformPerspective: 1200 }}
         className="relative w-full flex justify-center outline-none focus-visible:ring-2 focus-visible:ring-accent-start/40 rounded-3xl"
       >
-        <div className="relative h-[clamp(220px,38svh,420px)] md:h-[clamp(240px,44svh,480px)] aspect-[3/4]">
+        <div className="relative h-[clamp(220px,38svh,420px)] md:h-[clamp(240px,48svh,600px)] aspect-[3/4]">
           {images.map((image, i) => {
             const slot = ((i - front + count + 1) % count) - 1;
             const position = SLOTS[slot + 1] ?? SLOTS[1];
@@ -218,8 +218,13 @@ export function Hero() {
       {/* Soft teal stage light behind the photos */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-3/4 bg-[radial-gradient(ellipse_at_50%_60%,rgba(76,194,186,0.16),transparent_65%)]" />
 
-      {/* Centered headline */}
-      <div className="relative z-20 container mx-auto px-4 md:px-6 text-center space-y-3 md:space-y-4">
+      {/* Photo deck */}
+      <Reveal direction="scale" delay={0.3} width="100%" className="relative z-10">
+        <HeroDeck images={deckImages} />
+      </Reveal>
+
+      {/* Centered headline under the photos */}
+      <div className="relative z-20 container mx-auto px-4 md:px-6 mt-5 md:mt-6 text-center space-y-2 md:space-y-3">
         <Reveal delay={0.1} className="mx-auto">
           <h1 className="font-display font-bold text-4xl md:text-5xl lg:text-6xl leading-[0.95] tracking-tight text-ink">
             Vintage Closet<br className="md:hidden" /> <span className="text-gradient">Vienna.</span>
@@ -233,11 +238,6 @@ export function Hero() {
           </p>
         </Reveal>
       </div>
-
-      {/* Photo deck */}
-      <Reveal direction="scale" delay={0.3} width="100%" className="relative z-10 mt-6 md:mt-8">
-        <HeroDeck images={deckImages} />
-      </Reveal>
 
       {/* Collection shortcuts pinned to the bottom corners */}
       <Link href="/men" className={SIDE_BUTTON_CLASS + ' left-4 md:left-8'}>

@@ -102,7 +102,7 @@ export function Header() {
             <Logo compact={isScrolled} />
           </div>
 
-          {/* Right: Journal, Events, search, cart, store */}
+          {/* Right: Journal, Events, then search and cart at the far right */}
           <div className="flex items-center justify-end gap-1 md:gap-2">
             <nav className="hidden lg:flex items-center gap-6 mr-3" aria-label="More">
               {SECONDARY_LINKS.map((link) => (
@@ -139,11 +139,6 @@ export function Header() {
               )}
             </Button>
 
-            <Link href="/visit" className="hidden md:block ml-2">
-              <Button variant="primary" size="sm" tabIndex={-1}>
-                Visit Store
-              </Button>
-            </Link>
           </div>
         </div>
       </header>

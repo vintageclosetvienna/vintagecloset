@@ -1,8 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { Button } from '@/components/ui/Button';
 import { getRecentProductsCount } from '@/lib/data';
 
 export function CalloutBanner() {
@@ -37,11 +35,6 @@ export function CalloutBanner() {
                )}
              </span>
           </div>
-          <Link href="/women">
-            <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 border-white/20 hover:border-white h-8 text-xs px-4 ml-4 flex-shrink-0 whitespace-nowrap">
-               Shop Now
-            </Button>
-          </Link>
        </div>
     </div>
   );
