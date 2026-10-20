@@ -1,4 +1,5 @@
 import { Hero } from "@/components/landing/Hero";
+import { NewArrivals } from "@/components/landing/NewArrivals";
 import { CalloutBanner } from "@/components/landing/CalloutBanner";
 import { MediaCarousel } from "@/components/landing/MediaCarousel";
 import { StoreStory } from "@/components/landing/StoreStory";
@@ -14,6 +15,7 @@ export default function Home() {
     <div className="flex flex-col gap-0 md:gap-8 lg:gap-12 pb-12">
       <CalloutBanner />
       <Hero />
+      <NewArrivals limit={7} />
       <MediaCarousel />
       
       <StoreStory />
