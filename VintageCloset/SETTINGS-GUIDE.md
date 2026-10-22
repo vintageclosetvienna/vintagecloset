@@ -53,6 +53,7 @@ Short how-tos for everything added since October 2026. Code changes are one line
 - Pieces sent from the Mac (Rennstern app → video workspace → 👗 Client pipelines → step 5 → Publish) wait in Admin → **Drafts**: set the price, check the text, **Publish to the shop**. Nothing is visible in the shop before that.
 - Setup (once): run `supabase/schemaProductDrafts.sql` in the Supabase SQL editor; add Vercel env `VINTAGE_IMPORT_KEY` (Production, Sensitive; the app's Publishing setup menu makes and copies the key) and redeploy.
 - New key: app → Publishing setup → Make a new import key, then replace `VINTAGE_IMPORT_KEY` on Vercel and redeploy (the old key stops working).
+- Or in Admin → Products → **Add New Product**: the *From the Mac* row shows the sent pieces as photos; tap one, it fills the form (add the price), Save publishes it and clears the draft.
 - Max photos per piece: `src/app/api/import/piece/route.ts` → `MAX_PHOTOS` (12). Photos are stored like products (`product-images/<id>/`).
 
 ## Vercel Pro

@@ -8,4 +8,5 @@ export { FormSelect } from './FormSelect';
 export { FormCheckboxGroup } from './FormCheckboxGroup';
 export { FormToggle } from './FormToggle';
 export { DataTable } from './DataTable';
+export { DraftPicker } from './DraftPicker';
 
