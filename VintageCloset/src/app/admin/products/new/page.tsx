@@ -11,7 +11,8 @@ import {
   FormCheckboxGroup 
 } from '@/components/admin';
 import { Button } from '@/components/ui/Button';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured, DbProductDraft } from '@/lib/supabase';
+import { DraftPicker } from '@/components/admin/DraftPicker';
 import { CATEGORIES_BY_GENDER, AiProductDetails } from '@/lib/product-categories';
 import { authFetch } from '@/lib/auth-fetch';
 
@@ -48,6 +49,7 @@ export default function NewProductPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [fromDraft, setFromDraft] = useState<DbProductDraft | null>(null);
   const [formData, setFormData] = useState<ProductFormData>({
     images: [],
     title: '',
@@ -132,6 +134,22 @@ export default function NewProductPage() {
 
   // Run the autofill once on its own after the first photos finish uploading
   const hasAutoFilled = useRef(false);
+
+  // A piece sent from the Mac: its graded photos and AI text fill the form; you add the price and save
+  const pickDraft = (d: DbProductDraft) => {
+    hasAutoFilled.current = true;
+    setFromDraft(d);
+    setFormData({
+      images: d.images.map((u) => u.split('?')[0]),
+      title: d.title || '',
+      description: d.description || '',
+      price: d.price != null ? String(d.price) : '',
+      size: d.size || '',
+      genders: d.gender ? [d.gender] : [],
+      category: d.category || '',
+      era: d.era || '',
+    });
+  };
   useEffect(() => {
     if (hasAutoFilled.current || formData.images.length === 0 || formData.title) return;
     hasAutoFilled.current = true;
@@ -164,6 +182,7 @@ export default function NewProductPage() {
 
     // Save to Supabase
     const productData = {
+      ...(fromDraft ? { id: fromDraft.id } : {}),
       slug,
       title: formData.title,
       description: formData.description || null,
@@ -197,6 +216,7 @@ export default function NewProductPage() {
     }
 
     console.log('Product created:', data);
+    if (fromDraft) await supabase.from('product_drafts').delete().eq('id', fromDraft.id);
     router.push('/admin/products');
   };
 
@@ -220,6 +240,9 @@ export default function NewProductPage() {
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-8">
+        {/* Pieces sent from the Mac: tap one to fill everything but the price */}
+        <DraftPicker onPick={pickDraft} pickedId={fromDraft?.id} />
+
         {/* Images */}
         <ImageUpload
           label="Product Images"
