@@ -18,6 +18,27 @@ export interface DbProduct {
   updated_at: string;
 }
 
+// A piece sent from the Rennstern app (Vintage clothes pipeline); never shown in the shop until published
+export interface DbProductDraft {
+  id: string;
+  source: string;
+  source_ref: string;
+  title: string;
+  description: string | null;
+  price: number | null;
+  size: string;
+  category: string;
+  gender: 'men' | 'women' | 'unisex' | null;
+  era: string | null;
+  brand: string | null;
+  label_text: string | null;
+  images: string[];
+  ai_status: 'pending' | 'done' | 'failed';
+  ai_error: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface DbOrder {
   id: string;
   product_id: string | null;
@@ -87,6 +108,14 @@ export interface Database {
           updated_at?: string;
         };
         Update: Partial<Omit<DbProduct, 'id' | 'created_at' | 'updated_at'>>;
+      };
+      product_drafts: {
+        Row: DbProductDraft;
+        Insert: Partial<Omit<DbProductDraft, 'id' | 'created_at' | 'updated_at'>> & {
+          source_ref: string;
+          id?: string;
+        };
+        Update: Partial<Omit<DbProductDraft, 'id' | 'created_at' | 'updated_at'>>;
       };
       orders: {
         Row: DbOrder;

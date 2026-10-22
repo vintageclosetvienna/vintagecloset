@@ -47,7 +47,13 @@ Short how-tos for everything added since October 2026. Code changes are one line
 - Social links (footer, menu, Google): `src/lib/site.ts` → `SOCIAL_LINKS`.
 
 ## AI product autofill
-- Model: Vercel env `OPENAI_MODEL` (default `gpt-5.6-sol`). Texts and rules: `src/app/api/generate-description/route.ts` → `SYSTEM_PROMPT`.
+- Model: Vercel env `OPENAI_MODEL` (default `gpt-5.6-sol`). Texts and rules: `src/lib/ai-listing.ts` → `SYSTEM_PROMPT` (used by the admin autofill and by app drafts).
+
+## Drafts from the Rennstern app
+- Pieces sent from the Mac (Rennstern app → video workspace → 👗 Client pipelines → step 5 → Publish) wait in Admin → **Drafts**: set the price, check the text, **Publish to the shop**. Nothing is visible in the shop before that.
+- Setup (once): run `supabase/schemaProductDrafts.sql` in the Supabase SQL editor; add Vercel env `VINTAGE_IMPORT_KEY` (Production, Sensitive; the app's Publishing setup menu makes and copies the key) and redeploy.
+- New key: app → Publishing setup → Make a new import key, then replace `VINTAGE_IMPORT_KEY` on Vercel and redeploy (the old key stops working).
+- Max photos per piece: `src/app/api/import/piece/route.ts` → `MAX_PHOTOS` (12). Photos are stored like products (`product-images/<id>/`).
 
 ## Vercel Pro
 - Analytics and Speed Insights: Vercel → project → **Analytics** / **Speed Insights**.
