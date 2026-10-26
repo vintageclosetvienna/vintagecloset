@@ -1,6 +1,6 @@
 // Discount Codes (Gutscheine) Data Layer
 
-import { supabase, isSupabaseConfigured } from './supabase';
+import { supabase, isSupabaseConfigured, createServerClient } from './supabase';
 
 // Database type
 export interface DbDiscountCode {
@@ -342,7 +342,9 @@ export async function useDiscountCode(code: string): Promise<boolean> {
     return false;
   }
 
-  const { data, error } = await supabase
+  // Server only (checkout): counting a use needs the server key, the public key may not call it
+  const db = process.env.SUPABASE_SERVICE_ROLE_KEY ? createServerClient() : supabase;
+  const { data, error } = await db
     .rpc('use_discount_code', { p_code: code } as never);
 
   if (error) {
