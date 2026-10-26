@@ -37,14 +37,28 @@ CREATE TRIGGER update_product_drafts_updated_at
 
 ALTER TABLE product_drafts ENABLE ROW LEVEL SECURITY;
 
--- Only the signed-in admin sees and edits drafts; there is no public policy (the shop cannot read them).
+-- Only the team sees and edits drafts (same rule as products: staff add/edit, owner/manager delete);
+-- there is no public policy, so the shop cannot read them. Helpers come from the staff_roles_and_permissions migration.
 DROP POLICY IF EXISTS "Drafts are visible to the admin" ON product_drafts;
-CREATE POLICY "Drafts are visible to the admin"
-  ON product_drafts FOR SELECT
-  USING ((select auth.role()) = 'authenticated');
-
 DROP POLICY IF EXISTS "Drafts are editable by the admin" ON product_drafts;
-CREATE POLICY "Drafts are editable by the admin"
-  ON product_drafts FOR ALL
-  USING ((select auth.role()) = 'authenticated')
-  WITH CHECK ((select auth.role()) = 'authenticated');
+
+DROP POLICY IF EXISTS "Drafts are visible to the team" ON product_drafts;
+CREATE POLICY "Drafts are visible to the team"
+  ON product_drafts FOR SELECT
+  USING ((select is_staff()));
+
+DROP POLICY IF EXISTS "Staff can add drafts" ON product_drafts;
+CREATE POLICY "Staff can add drafts"
+  ON product_drafts FOR INSERT
+  WITH CHECK ((select is_staff()));
+
+DROP POLICY IF EXISTS "Staff can update drafts" ON product_drafts;
+CREATE POLICY "Staff can update drafts"
+  ON product_drafts FOR UPDATE
+  USING ((select is_staff()))
+  WITH CHECK ((select is_staff()));
+
+DROP POLICY IF EXISTS "Owners and managers can delete drafts" ON product_drafts;
+CREATE POLICY "Owners and managers can delete drafts"
+  ON product_drafts FOR DELETE
+  USING ((select is_admin()));
