@@ -36,7 +36,8 @@ export default function StaffLogin() {
         }}
       >
         <div className="text-center">
-          <div className="sticker-text font-display text-4xl">Vintage</div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brand/vintage-closet-logo.png" alt="Vintage Closet" width={480} height={436} className="mx-auto h-auto w-32 -rotate-6" />
           <h1 className="mt-3 font-display text-xl font-bold">{t('loginTitle')} 👋</h1>
           <p className="mt-1 text-sm text-muted">{t('loginSub')}</p>
         </div>

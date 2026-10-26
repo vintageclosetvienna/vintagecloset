@@ -5,6 +5,7 @@ import { StaffI18nProvider } from '@/lib/staff/i18n';
 import { StaffSessionProvider } from '@/lib/staff/session';
 import { StaffShell } from './Shell';
 import { Spinner, ToastProvider } from './ui';
+import { VintageOpening } from './VintageOpening';
 
 const noop = () => () => {};
 
@@ -23,6 +24,7 @@ export function StaffApp({ children }: { children: ReactNode }) {
       <StaffSessionProvider>
         <ToastProvider>
           <StaffShell>{children}</StaffShell>
+          <VintageOpening />
         </ToastProvider>
       </StaffSessionProvider>
     </StaffI18nProvider>
