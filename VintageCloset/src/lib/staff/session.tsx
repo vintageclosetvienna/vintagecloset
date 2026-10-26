@@ -40,6 +40,16 @@ async function loadProfile(): Promise<StaffProfile | null> {
   return data[0] as StaffProfile;
 }
 
+// Like loadProfile, but tells a network/token hiccup apart from "not on the team" and retries the hiccup once
+async function fetchProfile(): Promise<{ profile: StaffProfile | null; failed: boolean }> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const { data, error } = await db.rpc('my_staff_profile');
+    if (!error) return { profile: Array.isArray(data) && data.length ? (data[0] as StaffProfile) : null, failed: false };
+    await new Promise((r) => window.setTimeout(r, 1200));
+  }
+  return { profile: null, failed: true };
+}
+
 async function loadOpenShift(worker: string): Promise<Shift | null> {
   let query = db.from('staff_shifts').select('*').is('ended_at', null).order('started_at', { ascending: false }).limit(1);
   if (worker) query = query.eq('worker_name', worker);
@@ -56,13 +66,23 @@ export function StaffSessionProvider({ children }: { children: ReactNode }) {
   // The team session saved while the manager is unlocked, so locking returns to it without a new login
   const savedTeamSession = useRef<{ access_token: string; refresh_token: string } | null>(null);
 
-  // Session and profile
+  // Session and profile.
+  // Supabase re-announces the login whenever the window gets focus again (SIGNED_IN / TOKEN_REFRESHED). For the
+  // same person only the session is updated: reloading the profile each time could fail right after a window
+  // switch or wake-up, empty the profile and throw the whole app back to the login screen.
+  const profileUserId = useRef<string | null>(null);
   useEffect(() => {
     let cancelled = false;
     const apply = async (s: Session | null) => {
-      const p = s ? await loadProfile() : null;
+      const userId = s?.user.id ?? null;
+      if (userId && userId === profileUserId.current) {
+        setSession(s);
+        return;
+      }
+      const { profile: p } = s ? await fetchProfile() : { profile: null };
       if (cancelled) return;
       setSession(s);
+      profileUserId.current = p ? userId : null;
       setProfile(p);
       setReady(true);
     };
