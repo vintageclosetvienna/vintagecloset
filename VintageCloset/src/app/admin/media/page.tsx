@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { 
   Image as ImageIcon, 
@@ -19,7 +19,9 @@ import {
   getAllSiteImagesAdmin, 
   updateSiteImage, 
   uploadSiteImage,
-  type SiteImage 
+  getGalleryImages,
+  type GalleryImage,
+  type SiteImage
 } from '@/lib/site-images';
 
 type Section = 'landing-hero' | 'carousel' | 'collection-highlights' | 'collection-heroes';
@@ -124,9 +126,75 @@ interface EditModalProps {
   onClose: () => void;
   onSave: (data: { url: string; description?: string; file?: File; objectPosition?: string }) => Promise<void>;
   isSaving: boolean;
+  error?: string | null;
 }
 
-function EditModal({ image, position, isCarousel, onClose, onSave, isSaving }: EditModalProps) {
+// Grid of pictures already uploaded (site photos and product photos) to reuse without uploading again
+function GalleryPicker({ selectedUrl, onPick }: { selectedUrl: string; onPick: (url: string) => void }) {
+  const [items, setItems] = useState<GalleryImage[] | null>(null);
+  const [source, setSource] = useState<GalleryImage['source']>('site');
+
+  useEffect(() => {
+    let cancelled = false;
+    getGalleryImages()
+      .then(list => { if (!cancelled) setItems(list); })
+      .catch(() => { if (!cancelled) setItems([]); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const shown = (items || []).filter(item => item.source === source);
+
+  return (
+    <div className="rounded-xl border border-hairline p-3">
+      <div className="flex gap-2 mb-3">
+        {(['site', 'product'] as const).map(s => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => setSource(s)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+              source === s ? 'bg-ink text-white border-ink' : 'bg-white text-ink border-hairline hover:border-muted'
+            }`}
+          >
+            {s === 'site' ? 'Site photos' : 'Product photos'}
+          </button>
+        ))}
+      </div>
+      {items === null ? (
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+          {[...Array(8)].map((_, i) => <div key={i} className="aspect-square rounded-lg bg-gray-100 animate-pulse" />)}
+        </div>
+      ) : shown.length === 0 ? (
+        <p className="text-xs text-muted py-6 text-center">No pictures here yet.</p>
+      ) : (
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-72 overflow-y-auto pr-1">
+          {shown.map(item => (
+            <button
+              key={item.url}
+              type="button"
+              title={item.name}
+              onClick={() => onPick(item.url)}
+              className={`relative aspect-square rounded-lg overflow-hidden bg-gray-100 border-2 transition-all ${
+                selectedUrl === item.url ? 'border-accent-start ring-2 ring-accent-start/30' : 'border-transparent hover:border-muted'
+              }`}
+            >
+              <Image src={item.url} alt={item.name} fill sizes="120px" className="object-cover" unoptimized={!/\.supabase\.co\/|images\.unsplash\.com/.test(item.url)} />
+              {selectedUrl === item.url && (
+                <span className="absolute top-1 right-1 w-5 h-5 rounded-full bg-accent-start text-white flex items-center justify-center">
+                  <Check size={12} weight="bold" />
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EditModal({ image, position, isCarousel, onClose, onSave, isSaving, error }: EditModalProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showGallery, setShowGallery] = useState(false);
   const [newUrl, setNewUrl] = useState(image.url);
   const [category, setCategory] = useState(image.description);
   const [isDragging, setIsDragging] = useState(false);
@@ -343,6 +411,7 @@ function EditModal({ image, position, isCarousel, onClose, onSave, isSaving }: E
                   
                   {/* File input for replacement - hidden behind, only shows on click outside */}
                   <input
+                    ref={fileInputRef}
                     type="file"
                     accept="image/*"
                     onChange={handleFileSelect}
@@ -354,7 +423,7 @@ function EditModal({ image, position, isCarousel, onClose, onSave, isSaving }: E
                   {/* Replace button */}
                   <button
                     type="button"
-                    onClick={() => document.querySelector<HTMLInputElement>('input[type="file"]')?.click()}
+                    onClick={() => fileInputRef.current?.click()}
                     className="absolute bottom-3 left-3 z-30 bg-white hover:bg-gray-50 text-ink text-xs font-medium px-3 py-1.5 rounded-lg shadow-lg border border-hairline transition-colors"
                   >
                     Replace Image
@@ -402,6 +471,30 @@ function EditModal({ image, position, isCarousel, onClose, onSave, isSaving }: E
             </div>
           </div>
 
+          {/* Pick a picture that is already uploaded */}
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowGallery(v => !v)}
+              disabled={isSaving}
+              className="inline-flex items-center gap-2 text-sm font-medium text-ink hover:text-accent-start transition-colors"
+            >
+              <Images size={16} weight="bold" />
+              {showGallery ? 'Hide gallery' : 'Choose from gallery'}
+            </button>
+            {showGallery && (
+              <div className="mt-3">
+                <GalleryPicker
+                  selectedUrl={newUrl}
+                  onPick={url => {
+                    setSelectedFile(null);
+                    setNewUrl(url);
+                  }}
+                />
+              </div>
+            )}
+          </div>
+
           {/* Info */}
           <div className="bg-surface rounded-lg p-4">
             <p className="text-xs text-muted">
@@ -415,6 +508,7 @@ function EditModal({ image, position, isCarousel, onClose, onSave, isSaving }: E
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 p-6 border-t border-hairline flex-shrink-0">
+          {error && <p className="mr-auto text-sm text-red-600">{error}</p>}
           <Button variant="ghost" onClick={onClose} disabled={isSaving}>Cancel</Button>
           <Button 
             onClick={handleSave}
@@ -446,6 +540,7 @@ export default function MediaPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [savingImageKey, setSavingImageKey] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Fetch images on mount
   useEffect(() => {
@@ -467,21 +562,19 @@ export default function MediaPage() {
     if (!editingImage) return;
     
     setIsSaving(true);
+    setSaveError(null);
     setSavingImageKey(editingImage.image.key);
     
     try {
       let newUrl = data.url;
-      
-      // If a file was uploaded, upload to storage
+
+      // A new file goes to storage first; a failed upload stops here so a temporary blob: link is never saved
       if (data.file) {
-        const uploadedUrl = await uploadSiteImage(
+        newUrl = await uploadSiteImage(
           editingImage.image.key,
           sectionToDbSection[activeSection],
           data.file
         );
-        if (uploadedUrl) {
-          newUrl = uploadedUrl;
-        }
       }
       
       // Update the database
@@ -515,6 +608,7 @@ export default function MediaPage() {
       setEditingImage(null);
     } catch (error) {
       console.error('Error saving image:', error);
+      setSaveError(error instanceof Error ? error.message : 'Saving failed. Please try again.');
     } finally {
       setIsSaving(false);
       setSavingImageKey(null);
@@ -557,7 +651,7 @@ export default function MediaPage() {
                 };
                 return (
                   <ImageCard 
-                    key={image.key}
+                    key={`${image.key}-${image.url}`}
                     image={image} 
                     position={positionMap[image.key]}
                     onEdit={() => setEditingImage({ image, position: positionMap[image.key] })}
@@ -581,7 +675,7 @@ export default function MediaPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {sectionImages.map((image, idx) => (
                 <ImageCard 
-                  key={image.key}
+                  key={`${image.key}-${image.url}`}
                   image={image} 
                   position={`Slide ${idx + 1}`}
                   onEdit={() => setEditingImage({ image, position: `Slide ${idx + 1}`, isCarousel: true })}
@@ -610,7 +704,7 @@ export default function MediaPage() {
                 };
                 return (
                   <ImageCard 
-                    key={image.key}
+                    key={`${image.key}-${image.url}`}
                     image={image} 
                     position={positionMap[image.key]}
                     onEdit={() => setEditingImage({ image, position: `${positionMap[image.key]} Collection` })}
@@ -642,7 +736,7 @@ export default function MediaPage() {
                 };
                 return (
                   <ImageCard 
-                    key={image.key}
+                    key={`${image.key}-${image.url}`}
                     image={image} 
                     position={positionMap[image.key]}
                     onEdit={() => setEditingImage({ image, position: `${positionMap[image.key].replace('/', '').replace(' page', '')} Page Hero` })}
@@ -708,9 +802,10 @@ export default function MediaPage() {
           image={editingImage.image}
           position={editingImage.position}
           isCarousel={editingImage.isCarousel}
-          onClose={() => !isSaving && setEditingImage(null)}
+          onClose={() => { if (!isSaving) { setEditingImage(null); setSaveError(null); } }}
           onSave={handleSave}
           isSaving={isSaving}
+          error={saveError}
         />
       )}
     </div>
