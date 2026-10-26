@@ -1,7 +1,8 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { fadeOutVintageJingle, playVintageJingle } from '@/lib/vintage-sfx';
 
 /** When the opening last played (localStorage); it replays after 15 minutes, like the Rennstern opening. */
 const OPENING_KEY = 'vc-staff-opening-seen';
@@ -42,6 +43,8 @@ function readShouldPlay(): boolean {
  */
 export function VintageOpening() {
   const [stage, setStage] = useState<'show' | 'outro' | 'gone'>(() => (readShouldPlay() ? 'show' : 'gone'));
+  const [soundBlocked, setSoundBlocked] = useState(false);
+  const started = useRef(0);
   const [date] = useState(() =>
     new Date().toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Vienna' })
   );
@@ -53,12 +56,20 @@ export function VintageOpening() {
     } catch {
       /* storage blocked: it simply plays again next time */
     }
+    // The jingle starts with the scene; browsers block sound until a tap, then the sound button starts it in sync
+    started.current = performance.now();
+    let cancelled = false;
+    playVintageJingle().then((ok) => !cancelled && !ok && setSoundBlocked(true));
     const toOutro = window.setTimeout(() => setStage('outro'), SHOW_MS);
-    return () => window.clearTimeout(toOutro);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(toOutro);
+    };
   }, [stage]);
 
   useEffect(() => {
     if (stage !== 'outro') return;
+    fadeOutVintageJingle(OUTRO_MS / 1000);
     const done = window.setTimeout(() => setStage('gone'), OUTRO_MS);
     return () => window.clearTimeout(done);
   }, [stage]);
@@ -203,6 +214,19 @@ export function VintageOpening() {
           >
             tap to skip
           </motion.p>
+          {soundBlocked && stage === 'show' && (
+            <button
+              type="button"
+              onClick={async (e) => {
+                e.stopPropagation();
+                const ok = await playVintageJingle((performance.now() - started.current) / 1000);
+                setSoundBlocked(!ok);
+              }}
+              className="absolute bottom-[3%] left-1/2 -translate-x-1/2 rounded-full border border-white/30 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white backdrop-blur-md hover:bg-white/20"
+            >
+              🔊 Sound on
+            </button>
+          )}
         </motion.div>
       )}
     </AnimatePresence>

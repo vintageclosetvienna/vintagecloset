@@ -1,15 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useStaff } from '@/lib/staff/session';
 import { useT, StaffKey } from '@/lib/staff/i18n';
 import { useLoad, must } from '@/lib/staff/useLoad';
 import { db, viennaToday, DailyCheck, EventRow, Note } from '@/lib/staff/db';
-import { Btn, Card, CardTitle, Pill, Ring, Spinner, Tip, useToast } from '@/components/staff/ui';
+import { Btn, Card, CardTitle, Modal, Pill, Ring, Spinner, Tip, inputCls, useToast } from '@/components/staff/ui';
+import { DayPlan, DEFAULT_DAY_PLAN, LOCKED_STEPS, MAX_CUSTOM_TASKS, customKey, loadDayPlan, saveDayPlan } from '@/lib/staff/day-plan';
 import { cn } from '@/lib/utils';
-
-const DAILY_GOAL = 3;
 
 interface TodayData {
   toShip: number;
@@ -25,6 +24,8 @@ interface TodayData {
   checks: DailyCheck[];
   events: EventRow[];
   pinned: Note[];
+  plan: DayPlan;
+  planReady: boolean;
 }
 
 async function loadToday(): Promise<TodayData> {
@@ -37,7 +38,7 @@ async function loadToday(): Promise<TodayData> {
     return r.count ?? 0;
   };
   const head = { count: 'exact' as const, head: true };
-  const [toShip, pendingRecent, paidNew, pickups, studioNew, studioDone, drafts, createdToday, notesToday, shiftsToday, checks, events, pinned] = await Promise.all([
+  const [toShip, pendingRecent, paidNew, pickups, studioNew, studioDone, drafts, createdToday, notesToday, shiftsToday, checks, events, pinned, planRow] = await Promise.all([
     count(db.from('orders').select('id', head).eq('status', 'paid').not('shipping_address', 'ilike', 'ABHOLUNG%')),
     count(db.from('orders').select('id', head).eq('status', 'pending').gte('created_at', twoDaysAgo)),
     count(db.from('orders').select('id', head).eq('status', 'paid').gte('created_at', startOfDay)),
@@ -51,15 +52,19 @@ async function loadToday(): Promise<TodayData> {
     db.from('daily_checks').select('*').eq('day', today).then(must<DailyCheck[]>),
     db.from('events').select('id,slug,title,date,time,location,is_published').gte('date', today).order('date').limit(3).then(must<EventRow[]>),
     db.from('staff_notes').select('*').eq('pinned', true).eq('done', false).order('created_at', { ascending: false }).limit(3).then(must<Note[]>),
+    // The day plan; a missing table (not set up yet) falls back to the default plan
+    db.from('staff_settings').select('key').eq('key', 'day_plan').then((r) => !r.error, () => false),
   ]);
-  return { toShip, pendingRecent, paidNew, pickups, studioNew, studioDone, drafts, createdToday, notesToday, shiftToday: shiftsToday > 0, checks, events, pinned };
+  const plan = planRow ? await loadDayPlan() : DEFAULT_DAY_PLAN;
+  return { toShip, pendingRecent, paidNew, pickups, studioNew, studioDone, drafts, createdToday, notesToday, shiftToday: shiftsToday > 0, checks, events, pinned, plan, planReady: planRow };
 }
 
 interface Step {
   key: string;
   emoji: string;
-  title: StaffKey;
-  tip: StaffKey;
+  title: StaffKey | string;
+  tip: StaffKey | string;
+  custom?: boolean;
   done: boolean;
   badge?: string;
   href?: string;
@@ -69,10 +74,16 @@ interface Step {
 
 export default function TodayPage() {
   const { t, lang } = useT();
-  const { worker, shift, startShift } = useStaff();
+  const { worker, shift, startShift, isManager } = useStaff();
   const toast = useToast();
   const { data, loading, reload } = useLoad(loadToday);
   const [busyKey, setBusyKey] = useState('');
+  const [editing, setEditing] = useState(false);
+  // Reset keeps the removed ticks for a few seconds, so one tap brings them back
+  const [undoChecks, setUndoChecks] = useState<{ key: string; done_by: string | null }[] | null>(null);
+  const label = (s: Step) => (s.custom ? s.title : t(s.title as StaffKey));
+  const plan = data?.plan ?? DEFAULT_DAY_PLAN;
+  const goal = plan.goal;
   const hour = Number(new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hour12: false, timeZone: 'Europe/Vienna' }).format(new Date()));
   const greeting = hour < 11 ? t('goodMorning') : hour < 18 ? t('goodDay') : t('goodEvening');
   const motivation = useMemo(() => {
@@ -95,6 +106,32 @@ export default function TodayPage() {
     reload();
   };
 
+  const resetDay = async () => {
+    if (!data?.checks.length || !window.confirm(t('resetDayConfirm'))) return;
+    setBusyKey('reset');
+    const before = data.checks.map((c) => ({ key: c.key, done_by: c.done_by ?? null }));
+    const { error } = await db.from('daily_checks').delete().eq('day', viennaToday());
+    setBusyKey('');
+    if (error) return toast('⚠️ ' + t('error'));
+    setUndoChecks(before);
+    reload();
+  };
+
+  const undoReset = async () => {
+    if (!undoChecks) return;
+    const rows = undoChecks.map((c) => ({ day: viennaToday(), key: c.key, done_by: c.done_by }));
+    setUndoChecks(null);
+    await db.from('daily_checks').insert(rows);
+    reload();
+  };
+
+  // The undo offer disappears after 8 seconds
+  useEffect(() => {
+    if (!undoChecks) return;
+    const timer = window.setTimeout(() => setUndoChecks(null), 8000);
+    return () => window.clearTimeout(timer);
+  }, [undoChecks]);
+
   const steps: Step[] = data
     ? [
         { key: 'shift', emoji: '⏱️', title: 'stepShift', tip: 'stepShiftTip', done: !!shift || data.shiftToday, action: shift ? undefined : async () => { await startShift(); reload(); } },
@@ -104,9 +141,10 @@ export default function TodayPage() {
         { key: 'pickups-ready', emoji: '🛍️', title: 'stepPickups', tip: 'stepPickupsTip', done: data.pickups === 0 || checked('pickups-ready'), manual: data.pickups > 0, href: '/staff/orders#pickup', badge: data.pickups ? `${data.pickups}` : undefined },
         { key: 'studio', emoji: '📸', title: 'stepStudio', tip: 'stepStudioTip', done: data.studioNew === 0, href: '/staff/studio', badge: data.studioNew ? `${data.studioNew}` : data.studioDone ? `✨ ${data.studioDone}` : undefined },
         { key: 'drafts', emoji: '🧥', title: 'stepDrafts', tip: 'stepDraftsTip', done: data.drafts === 0, href: '/staff/products?tab=drafts', badge: data.drafts ? `${data.drafts}` : undefined },
-        { key: 'new', emoji: '🎯', title: 'stepNew', tip: 'stepNewTip', done: data.createdToday >= DAILY_GOAL, href: '/staff/products/new', badge: `${Math.min(data.createdToday, DAILY_GOAL)}/${DAILY_GOAL}` },
+        { key: 'new', emoji: '🎯', title: 'stepNew', tip: 'stepNewTip', done: data.createdToday >= goal, href: '/staff/products/new', badge: `${Math.min(data.createdToday, goal)}/${goal}` },
         { key: 'note', emoji: '📝', title: 'stepNote', tip: 'stepNoteTip', done: data.notesToday > 0, href: '/staff/team#notes' },
-      ]
+        ...plan.custom.map((c): Step => ({ key: customKey(c), emoji: c.emoji, title: c.title, tip: c.title, custom: true, manual: true, done: checked(customKey(c)) })),
+      ].filter((s) => !plan.hidden.includes(s.key))
     : [];
 
   const doneCount = steps.filter((s) => s.done).length;
@@ -132,7 +170,7 @@ export default function TodayPage() {
               <p className="pt-2 text-sm">
                 <span className="text-white/60">→ </span>
                 <span className="font-semibold">
-                  {nextStep.emoji} {t(nextStep.title)}
+                  {nextStep.emoji} {label(nextStep)}
                 </span>
               </p>
             )}
@@ -167,7 +205,24 @@ export default function TodayPage() {
       <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
         {/* Pipeline */}
         <Card>
-          <CardTitle tip={t('pipelineTip')} right={<Pill tone="teal">{doneCount}/{steps.length || 9}</Pill>}>
+          <CardTitle
+            tip={t('pipelineTip')}
+            right={
+              <div className="flex items-center gap-1">
+                <Pill tone="teal">{doneCount}/{steps.length || 9}</Pill>
+                {isManager && data && (
+                  <>
+                    <Tip text={t('editDayTip')}>
+                      <Btn variant="ghost" className="min-h-8 px-2 text-xs" onClick={() => setEditing(true)}>✏️ {t('editDay')}</Btn>
+                    </Tip>
+                    <Tip text={t('resetDayTip')}>
+                      <Btn variant="ghost" className="min-h-8 px-2 text-xs" disabled={!data.checks.length || busyKey === 'reset'} onClick={resetDay}>↺ {t('resetDay')}</Btn>
+                    </Tip>
+                  </>
+                )}
+              </div>
+            }
+          >
             {t('pipeline')}
           </CardTitle>
           {loading && !data ? (
@@ -194,9 +249,9 @@ export default function TodayPage() {
                     {s.done ? '✓' : s.emoji}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <Tip text={t(s.tip)}>
+                    <Tip text={s.custom ? s.tip : t(s.tip as StaffKey)}>
                       <span tabIndex={0} className={cn('cursor-help text-sm font-semibold outline-none', s.done && 'text-emerald-800')}>
-                        {i + 1}. {t(s.title)}
+                        {i + 1}. {label(s)}
                       </span>
                     </Tip>
                   </div>
@@ -225,6 +280,12 @@ export default function TodayPage() {
         </Card>
 
         <div className="space-y-6">
+          {undoChecks && (
+            <div className="flex items-center justify-between gap-3 rounded-2xl bg-ink px-4 py-3 text-sm text-white shadow-lg" role="status">
+              <span>↺ {t('resetDone')}</span>
+              <Btn variant="soft" className="min-h-8 bg-white/15 px-3 text-xs text-white hover:bg-white/25" onClick={undoReset}>{t('undo')}</Btn>
+            </div>
+          )}
           {/* Pinned notes */}
           <Card>
             <CardTitle tip={t('notesTip')} right={<Link href="/staff/team#notes" className="text-xs font-semibold text-muted hover:text-ink">{t('open')} ↗</Link>}>
@@ -274,6 +335,145 @@ export default function TodayPage() {
           </Card>
         </div>
       </div>
+
+      {editing && data && (
+        <DayPlanEditor
+          plan={plan}
+          ready={data.planReady}
+          builtIn={BUILT_IN_STEPS}
+          onClose={() => setEditing(false)}
+          onSaved={() => {
+            setEditing(false);
+            toast('✅ ' + t('planSaved'));
+            reload();
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+// Built-in steps that the day plan can show or hide (order as on Today)
+const BUILT_IN_STEPS: { key: string; emoji: string; title: StaffKey }[] = [
+  { key: 'shift', emoji: '⏱️', title: 'stepShift' },
+  { key: 'shop-check', emoji: '🔍', title: 'stepShopCheck' },
+  { key: 'orders-checked', emoji: '💳', title: 'stepOrders' },
+  { key: 'ship', emoji: '📦', title: 'stepShip' },
+  { key: 'pickups-ready', emoji: '🛍️', title: 'stepPickups' },
+  { key: 'studio', emoji: '📸', title: 'stepStudio' },
+  { key: 'drafts', emoji: '🧥', title: 'stepDrafts' },
+  { key: 'new', emoji: '🎯', title: 'stepNew' },
+  { key: 'note', emoji: '📝', title: 'stepNote' },
+];
+
+// Edit the shop's day: show/hide steps, the daily goal, own daily tasks. Saved for the whole team.
+function DayPlanEditor({
+  plan,
+  ready,
+  builtIn,
+  onClose,
+  onSaved,
+}: {
+  plan: DayPlan;
+  ready: boolean;
+  builtIn: typeof BUILT_IN_STEPS;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const { t } = useT();
+  const toast = useToast();
+  const [draft, setDraft] = useState<DayPlan>(plan);
+  const [newTitle, setNewTitle] = useState('');
+  const [newEmoji, setNewEmoji] = useState('✅');
+  const [saving, setSaving] = useState(false);
+
+  const toggle = (key: string) =>
+    setDraft((d) => ({ ...d, hidden: d.hidden.includes(key) ? d.hidden.filter((k) => k !== key) : [...d.hidden, key] }));
+
+  const addTask = () => {
+    const title = newTitle.trim();
+    if (!title || draft.custom.length >= MAX_CUSTOM_TASKS) return;
+    const id = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+    setDraft((d) => ({ ...d, custom: [...d.custom, { id, emoji: newEmoji || '✅', title }] }));
+    setNewTitle('');
+  };
+
+  const save = async () => {
+    setSaving(true);
+    const ok = await saveDayPlan(draft);
+    setSaving(false);
+    if (ok) onSaved();
+    else toast('⚠️ ' + t('error'));
+  };
+
+  return (
+    <Modal open onClose={onClose} title={t('dayPlan')}>
+      <div className="space-y-5">
+        <h2 className="font-display text-xl font-bold">✏️ {t('dayPlan')}</h2>
+        {!ready && <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900">{t('planNotSetUp')}</p>}
+
+        <div className="space-y-2">
+          <p className="text-sm font-semibold">{t('stepsShown')}</p>
+          <ul className="space-y-1.5">
+            {builtIn.map((s) => {
+              const locked = LOCKED_STEPS.includes(s.key);
+              const shown = locked || !draft.hidden.includes(s.key);
+              return (
+                <li key={s.key}>
+                  <label className={cn('flex items-center gap-3 rounded-xl border px-3 py-2 text-sm transition', shown ? 'border-brand-teal/40 bg-brand-teal/5' : 'border-hairline bg-white opacity-60')}>
+                    <input type="checkbox" className="h-4 w-4 accent-[#4CC2BA]" checked={shown} disabled={locked} onChange={() => toggle(s.key)} />
+                    <span aria-hidden>{s.emoji}</span>
+                    <span className="flex-1">{t(s.title)}</span>
+                  </label>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm font-semibold">🎯 {t('dailyGoal')}</p>
+          <div className="flex items-center gap-2">
+            <Btn variant="soft" className="min-h-9 w-9 px-0" onClick={() => setDraft((d) => ({ ...d, goal: Math.max(1, d.goal - 1) }))}>−</Btn>
+            <span className="w-8 text-center font-display text-lg font-bold" aria-live="polite">{draft.goal}</span>
+            <Btn variant="soft" className="min-h-9 w-9 px-0" onClick={() => setDraft((d) => ({ ...d, goal: Math.min(20, d.goal + 1) }))}>+</Btn>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <p className="text-sm font-semibold">{t('ownTasks')}</p>
+          {draft.custom.length > 0 && (
+            <ul className="space-y-1.5">
+              {draft.custom.map((c) => (
+                <li key={c.id} className="flex items-center gap-3 rounded-xl border border-hairline px-3 py-2 text-sm">
+                  <span aria-hidden>{c.emoji}</span>
+                  <span className="flex-1">{c.title}</span>
+                  <Btn variant="ghost" className="min-h-8 px-2 text-xs" onClick={() => setDraft((d) => ({ ...d, custom: d.custom.filter((x) => x.id !== c.id) }))}>{t('delete')}</Btn>
+                </li>
+              ))}
+            </ul>
+          )}
+          {draft.custom.length < MAX_CUSTOM_TASKS && (
+            <div className="flex gap-2">
+              <input className={cn(inputCls, 'w-14 text-center')} value={newEmoji} maxLength={4} onChange={(e) => setNewEmoji(e.target.value)} aria-label="Emoji" />
+              <input
+                className={inputCls}
+                value={newTitle}
+                maxLength={60}
+                placeholder={t('taskPlaceholder')}
+                onChange={(e) => setNewTitle(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && addTask()}
+              />
+              <Btn variant="soft" onClick={addTask} disabled={!newTitle.trim()}>{t('add')}</Btn>
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-2 pt-2">
+          <Btn variant="ghost" onClick={onClose}>{t('cancel')}</Btn>
+          <Btn variant="primary" onClick={save} disabled={saving || !ready}>{saving ? <Spinner /> : t('savePlan')}</Btn>
+        </div>
+      </div>
+    </Modal>
   );
 }
