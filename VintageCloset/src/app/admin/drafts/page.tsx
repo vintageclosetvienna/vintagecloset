@@ -6,6 +6,7 @@ import { CheckCircle, Sparkle, Trash, Tray } from '@phosphor-icons/react';
 import { FormInput, FormSelect, FormTextarea } from '@/components/admin';
 import { Button } from '@/components/ui/Button';
 import { supabase, isSupabaseConfigured, DbProductDraft } from '@/lib/supabase';
+import { authFetch } from '@/lib/auth-fetch';
 import { CATEGORIES_BY_GENDER, ProductGender, AiProductDetails } from '@/lib/product-categories';
 
 /*
@@ -72,7 +73,7 @@ function DraftCard({ draft, onDone }: { draft: DbProductDraft; onDone: () => voi
   const rewrite = async () => {
     setBusy('ai'); setError(null);
     try {
-      const r = await fetch('/api/generate-description', {
+      const r = await authFetch('/api/generate-description', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productName: edit.title, imageUrls: draft.images.slice(0, 6) }),
