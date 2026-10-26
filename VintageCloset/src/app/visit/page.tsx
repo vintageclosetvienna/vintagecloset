@@ -99,6 +99,8 @@ export default function VisitPage() {
                src={storeImage} 
                alt="Inside Vintage Closet Vienna" 
                fill 
+               priority
+               sizes="(min-width: 1024px) 50vw, 100vw"
                className="object-cover hover:scale-105 transition-transform duration-[2s]"
             />
             <div className="absolute inset-0 bg-ink/10 pointer-events-none" />
