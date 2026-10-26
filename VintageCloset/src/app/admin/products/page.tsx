@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/Button';
 import { Product, getDiscountedPrice } from '@/lib/data';
 import { supabase, isSupabaseConfigured, DbProduct } from '@/lib/supabase';
 import { CATEGORIES_BY_GENDER, AiProductDetails } from '@/lib/product-categories';
+import { authFetch } from '@/lib/auth-fetch';
 
 const DISCOUNT_OPTIONS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50];
 
@@ -113,7 +114,7 @@ function EditProductModal({
     setGenerateError(null);
 
     try {
-      const response = await fetch('/api/generate-description', {
+      const response = await authFetch('/api/generate-description', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

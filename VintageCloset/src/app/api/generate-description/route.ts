@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { getTeamMember, hasRole } from '@/lib/server-auth';
 import {
   AiProductDetails,
   CATEGORIES_BY_GENDER,
@@ -56,6 +57,12 @@ const LISTING_SCHEMA = {
 
 export async function POST(request: NextRequest) {
   try {
+    // Only signed-in team members may use the paid AI service
+    const member = await getTeamMember(request);
+    if (!hasRole(member, ['owner', 'manager', 'staff'])) {
+      return NextResponse.json({ error: 'Please sign in to the shop team area first.' }, { status: 401 });
+    }
+
     // Check if OpenAI API key is configured
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json(

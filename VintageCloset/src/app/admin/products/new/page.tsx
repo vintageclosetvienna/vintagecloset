@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { CATEGORIES_BY_GENDER, AiProductDetails } from '@/lib/product-categories';
+import { authFetch } from '@/lib/auth-fetch';
 
 const GENDER_OPTIONS = [
   { value: 'women', label: 'Women' },
@@ -97,7 +98,7 @@ export default function NewProductPage() {
     setGenerateError(null);
 
     try {
-      const response = await fetch('/api/generate-description', {
+      const response = await authFetch('/api/generate-description', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

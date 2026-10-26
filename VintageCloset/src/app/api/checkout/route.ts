@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getProductById, getPriceAsNumber } from '@/lib/data';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured, createServerClient } from '@/lib/supabase';
 import { validateDiscountCode, useDiscountCode, calculateDiscount } from '@/lib/discount-codes';
 import { newsletterDb } from '@/lib/newsletter';
 
@@ -270,7 +270,9 @@ export async function POST(request: NextRequest) {
           product_image: product.images[0] || null,
         };
         
-        const { error: orderError } = await supabase
+        // Orders are written with the server key; the public key may not create orders
+        const db = process.env.SUPABASE_SERVICE_ROLE_KEY ? createServerClient() : supabase;
+        const { error: orderError } = await db
           .from('orders')
           .insert(orderData as never);
 
