@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
   appleWebApp: { capable: true, title: 'VC Team', statusBarStyle: 'default' },
   // Lets Edge/Chrome on Windows and Mac install the team app as its own window ("Install VC Team")
-  manifest: '/staff.webmanifest',
+  manifest: '/team-app.webmanifest', // outside /staff: the browser check there would block the manifest
   icons: { apple: '/brand/app-icon-192.png' },
 };
 
