@@ -7,7 +7,8 @@ import { NewsletterPopup } from '@/components/layout/NewsletterPopup';
 
 export function ConditionalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isAdmin = pathname.startsWith('/admin');
+  // Admin and the team app bring their own layout
+  const isAdmin = pathname.startsWith('/admin') || pathname.startsWith('/staff');
 
   if (isAdmin) {
     return <>{children}</>;
