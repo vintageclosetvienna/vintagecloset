@@ -109,3 +109,8 @@
   .marquee-track { animation: none; }
   .marquee-fade { overflow-x: auto; }
 }
+
+/* Launch intro (home page): hidden before first paint when it should not play; hides itself if scripts fail */
+html[data-vc-intro="skip"] .vc-opening { display: none; }
+.vc-opening { animation: vc-opening-failsafe 0s linear 7s forwards; }
+@keyframes vc-opening-failsafe { to { visibility: hidden; pointer-events: none; } }

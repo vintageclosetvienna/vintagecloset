@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Hero } from "@/components/landing/Hero";
+import { SiteOpening } from "@/components/landing/SiteOpening";
 import { NewArrivals } from "@/components/landing/NewArrivals";
 import { CalloutBanner } from "@/components/landing/CalloutBanner";
 import { MediaCarousel } from "@/components/landing/MediaCarousel";
@@ -19,6 +20,7 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <div className="flex flex-col gap-0 md:gap-8 lg:gap-12 pb-12">
+      <SiteOpening />
       <CalloutBanner />
       <Hero />
       <NewArrivals limit={7} />
