@@ -6,13 +6,6 @@ import { Reveal } from '@/components/shared/Reveal';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { getCollectionHero } from '@/lib/site-images';
 
-// Fallback images
-const FALLBACK_HEROES: Record<string, string> = {
-  women: 'https://images.unsplash.com/photo-1550614000-4b9519e40569?q=80&w=2070&auto=format&fit=crop',
-  men: 'https://images.unsplash.com/photo-1617114919297-3c8dd6caea94?q=80&w=1964&auto=format&fit=crop',
-  unisex: 'https://images.unsplash.com/photo-1523381294911-8d3cead13475?q=80&w=2070&auto=format&fit=crop',
-};
-
 interface CollectionLayoutProps {
   title: string;
   description: string;
@@ -22,15 +15,13 @@ interface CollectionLayoutProps {
 }
 
 export function CollectionLayout({ title, description, heroImage: propHeroImage, gender, children }: CollectionLayoutProps) {
-  const [heroImage, setHeroImage] = useState<string>(propHeroImage || FALLBACK_HEROES[gender]);
+  const [heroImage, setHeroImage] = useState<string>(''); // own header photo from Site Images; no stock placeholder
+  const shownHero = propHeroImage || heroImage;
   const [filters, setFilters] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
-    // If a heroImage was passed as prop, use it
-    if (propHeroImage) {
-      setHeroImage(propHeroImage);
-      return;
-    }
+    // A heroImage passed as prop wins; nothing to fetch
+    if (propHeroImage) return;
 
     // Otherwise fetch from Supabase
     async function fetchHeroImage() {
@@ -48,7 +39,7 @@ export function CollectionLayout({ title, description, heroImage: propHeroImage,
     <>
       <div className="relative min-h-[60vh] md:min-h-[50vh] flex items-end pb-12 md:items-center overflow-hidden">
          <SafeImage 
-            src={heroImage} 
+            src={shownHero} 
             alt={title} 
             fill 
             className="object-cover"

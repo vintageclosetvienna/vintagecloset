@@ -19,8 +19,11 @@ export function SafeImage({
   className,
   ...props 
 }: SafeImageProps) {
-  const [hasError, setHasError] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  // Error and loading are remembered per src, so a new picture (e.g. the real one after a placeholder) gets a fresh try
+  const [failedSrc, setFailedSrc] = useState<unknown>(null);
+  const [loadedSrc, setLoadedSrc] = useState<unknown>(null);
+  const hasError = failedSrc === src;
+  const isLoading = !hasError && loadedSrc !== src;
 
   // Check if src is valid
   const isValidSrc = src && typeof src === 'string' && src.length > 0 && src !== 'null' && src !== 'undefined';
@@ -53,11 +56,8 @@ export function SafeImage({
         src={src}
         alt={alt}
         className={`${className || ''} ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
-        onLoad={() => setIsLoading(false)}
-        onError={() => {
-          setHasError(true);
-          setIsLoading(false);
-        }}
+        onLoad={() => setLoadedSrc(src)}
+        onError={() => setFailedSrc(src)}
         {...props}
       />
     </>

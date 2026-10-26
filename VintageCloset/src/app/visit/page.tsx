@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import Image from 'next/image';
+import { useEffect, useState } from 'react';
+import { SafeImage } from '@/components/ui/SafeImage';
+import { getLandingHeroImages } from '@/lib/site-images';
 import { Reveal } from '@/components/shared/Reveal';
 import { Button } from '@/components/ui/Button';
 import { MapPin, Clock, Phone, X } from '@phosphor-icons/react';
@@ -23,6 +24,14 @@ const SHOPS = [
 
 export default function VisitPage() {
   const [showLocationModal, setShowLocationModal] = useState(false);
+  // The shop's own photo (Admin › Site Images › Landing Hero, centre)
+  const [storeImage, setStoreImage] = useState('');
+
+  useEffect(() => {
+    getLandingHeroImages()
+      .then(({ center, left }) => setStoreImage(center?.url || left?.url || ''))
+      .catch(() => {});
+  }, []);
 
   const handleGetDirections = (mapsUrl: string) => {
     window.open(mapsUrl, '_blank');
@@ -86,9 +95,9 @@ export default function VisitPage() {
 
          {/* Image/Map Side */}
          <div className="relative h-[50vh] lg:h-auto bg-gray-200 order-1 lg:order-2 overflow-hidden">
-            <Image 
-               src="https://images.unsplash.com/photo-1552374196-c4e7ffc6e194?q=80&w=1887&auto=format&fit=crop" 
-               alt="Store Interior" 
+            <SafeImage 
+               src={storeImage} 
+               alt="Inside Vintage Closet Vienna" 
                fill 
                className="object-cover hover:scale-105 transition-transform duration-[2s]"
             />
