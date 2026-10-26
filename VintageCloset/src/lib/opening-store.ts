@@ -19,9 +19,10 @@ export function useOpeningDone(): boolean {
   return useSyncExternalStore(subscribe, () => done, () => false);
 }
 
-/** Shared rule (also run inline before first paint): skip for this session, reduced motion, bots and automated browsers */
+/** Shared rule (also run inline before first paint): skip for this session, reduced motion, bots and automated browsers;
+ *  the inline copy also hides the stage after 7 s, so a failed script can never leave it covering the shop */
 export const OPENING_SESSION_KEY = 'vc-opening-played';
-export const OPENING_SKIP_SCRIPT = `(function(){try{var n=navigator,s=window.sessionStorage;if(s.getItem('${OPENING_SESSION_KEY}')||n.webdriver||/bot|crawl|spider|slurp|lighthouse|headless|preview/i.test(n.userAgent)||window.matchMedia('(prefers-reduced-motion: reduce)').matches){document.documentElement.setAttribute('data-vc-intro','skip')}}catch(e){document.documentElement.setAttribute('data-vc-intro','skip')}})();`;
+export const OPENING_SKIP_SCRIPT = `(function(){try{var n=navigator,s=window.sessionStorage;if(s.getItem('${OPENING_SESSION_KEY}')||n.webdriver||/bot|crawl|spider|slurp|lighthouse|headless|preview/i.test(n.userAgent)||window.matchMedia('(prefers-reduced-motion: reduce)').matches){document.documentElement.setAttribute('data-vc-intro','skip')}}catch(e){document.documentElement.setAttribute('data-vc-intro','skip')}setTimeout(function(){document.documentElement.setAttribute('data-vc-intro','skip')},7000)})();`;
 
 export function shouldSkipOpening(): boolean {
   if (typeof window === 'undefined') return false;
