@@ -1,0 +1,16 @@
+{
+  "name": "VC Team – Vintage Closet",
+  "short_name": "VC Team",
+  "description": "Team app of Vintage Closet Vienna: today, products, orders, studio, insights, team.",
+  "id": "/staff",
+  "start_url": "/staff",
+  "scope": "/staff",
+  "display": "standalone",
+  "background_color": "#F5F7F8",
+  "theme_color": "#F5F7F8",
+  "icons": [
+    { "src": "/brand/app-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/brand/app-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/brand/app-icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
