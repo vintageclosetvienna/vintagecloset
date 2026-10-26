@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import { readHint } from '@/lib/password-hint';
+import { SITE_URL } from '@/lib/site';
 import { Eye, EyeSlash, Spinner, Lock } from '@phosphor-icons/react';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/Button';
@@ -15,6 +18,27 @@ export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Forgot password: send a reset link; the hint (if this browser has one) can be shown on request
+  const [forgot, setForgot] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [hintShown, setHintShown] = useState(false);
+  const hint = readHint(email);
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('forgot') === '1') setForgot(true);
+  }, []);
+
+  const sendReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setIsLoading(true);
+    const origin = window.location.hostname === 'localhost' ? window.location.origin : SITE_URL;
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: `${origin}/admin/reset` });
+    setIsLoading(false);
+    // Same answer whether or not the address has an account, so the form does not reveal who is on the team
+    if (error && !/not found|user/i.test(error.message)) setError(error.message);
+    else setResetSent(true);
+  };
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -73,6 +97,31 @@ export default function AdminLoginPage() {
 
         {/* Login Form */}
         <div className="bg-white rounded-2xl border border-hairline p-8 shadow-sm">
+          {forgot ? (
+            <form onSubmit={sendReset} className="space-y-6">
+              {error && <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">{error}</div>}
+              {resetSent ? (
+                <div className="space-y-3 text-center">
+                  <p className="text-4xl" aria-hidden>📬</p>
+                  <p className="font-medium text-ink">Check your inbox</p>
+                  <p className="text-sm text-muted">If <b>{email}</b> belongs to the team, a link to choose a new password is on its way. It works once, for one hour.</p>
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm text-muted">Type your admin email. We send you a link to choose a new password.</p>
+                  <div>
+                    <label htmlFor="reset-email" className="block text-sm font-medium text-ink mb-2">Email</label>
+                    <input id="reset-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus
+                      className="w-full px-4 py-3 rounded-xl border border-hairline bg-surface text-ink placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-accent-start/30 focus:border-accent-start transition-all" />
+                  </div>
+                  <Button type="submit" disabled={isLoading || !email} className="w-full">
+                    {isLoading ? <><Spinner size={16} className="animate-spin mr-2" />Sending…</> : 'Send reset link'}
+                  </Button>
+                </>
+              )}
+              <button type="button" onClick={() => { setForgot(false); setResetSent(false); setError(null); }} className="w-full text-sm text-muted hover:text-ink">← Back to sign in</button>
+            </form>
+          ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Error Message */}
             {error && (
@@ -147,7 +196,20 @@ export default function AdminLoginPage() {
                 'Sign In'
               )}
             </Button>
+
+            <div className="flex items-center justify-between text-sm">
+              {hint ? (
+                <button type="button" onClick={() => setHintShown((v) => !v)} className="text-muted hover:text-ink">
+                  💡 {hintShown ? 'Hide hint' : 'Show hint'}
+                </button>
+              ) : <span />}
+              <button type="button" onClick={() => { setForgot(true); setError(null); }} className="font-medium text-accent-end hover:underline">
+                Forgot password?
+              </button>
+            </div>
+            {hint && hintShown && <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900">💡 {hint}</p>}
           </form>
+          )}
         </div>
 
         {/* Footer */}

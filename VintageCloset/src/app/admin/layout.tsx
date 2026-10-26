@@ -14,8 +14,8 @@ export default function AdminLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
   
-  // Don't wrap login page with AuthGuard
-  const isLoginPage = pathname === '/admin/login';
+  // Login and the password reset page work without being signed in
+  const isLoginPage = pathname === '/admin/login' || pathname === '/admin/reset';
 
   if (isLoginPage) {
     return (
