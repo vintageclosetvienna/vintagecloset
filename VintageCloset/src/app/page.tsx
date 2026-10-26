@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Hero } from "@/components/landing/Hero";
 import { NewArrivals } from "@/components/landing/NewArrivals";
 import { CalloutBanner } from "@/components/landing/CalloutBanner";
@@ -9,6 +10,11 @@ import { GeneratedListingPreview } from "@/components/landing/GeneratedListingPr
 import { Stats } from "@/components/landing/Stats";
 import { JournalEventsTeaser } from "@/components/landing/JournalEventsTeaser";
 import { CallToAction } from "@/components/landing/CallToAction";
+
+// Only the home page claims the bare address; other pages set their own canonical
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 export default function Home() {
   return (

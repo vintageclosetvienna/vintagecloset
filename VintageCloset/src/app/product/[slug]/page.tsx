@@ -1,4 +1,7 @@
-import { getProduct, getProducts } from '@/lib/data';
+import { cache } from 'react';
+import type { Metadata } from 'next';
+import { getProduct as fetchProduct, getProducts, getDiscountedPrice, getPriceAsNumber, type Product } from '@/lib/data';
+import { SITE_URL, SITE_NAME } from '@/lib/site';
 import { ProductGallery } from '@/components/shop/ProductGallery';
 import { ProductInfo } from '@/components/shop/ProductInfo';
 import { ProductGrid } from '@/components/shop/ProductGrid';
@@ -18,6 +21,70 @@ export async function generateStaticParams() {
 // Make the page dynamic to fetch real data
 export const dynamic = 'force-dynamic';
 
+// One database read per request, shared by the page and its metadata
+const getProduct = cache(fetchProduct);
+
+function shortText(text: string | undefined, max: number): string {
+  const clean = (text || '').replace(/\s+/g, ' ').trim();
+  return clean.length > max ? `${clean.slice(0, max - 1).replace(/\s+\S*$/, '')}…` : clean;
+}
+
+// Title, description and share preview (photo) for search results and social links
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const product = await getProduct(slug);
+  if (!product) return { title: 'Item not found', robots: { index: false } };
+
+  const facts = [product.era, product.size && `Size ${product.size}`, getDiscountedPrice(product.price, product.discount)].filter(Boolean).join(' · ');
+  const description = shortText(`${facts}. ${product.description || `Vintage ${product.category} from the Vienna archive.`}`, 155);
+  const images = (product.images.length ? product.images : [product.image]).filter(Boolean).slice(0, 4);
+
+  return {
+    title: product.isSold ? `${product.title} (sold)` : product.title,
+    description,
+    alternates: { canonical: `/product/${product.slug}` },
+    openGraph: { type: 'website', title: product.title, description, url: `/product/${product.slug}`, images },
+    twitter: { card: 'summary_large_image', title: product.title, description, images },
+  };
+}
+
+// Product data for Google (price, availability, photos) plus the breadcrumb Home › Collection › Item
+function productJsonLd(product: Product) {
+  const url = `${SITE_URL}/product/${product.slug}`;
+  const collection = product.gender.charAt(0).toUpperCase() + product.gender.slice(1);
+  return [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: product.title,
+      description: product.description || undefined,
+      image: product.images.length ? product.images : [product.image],
+      sku: product.id,
+      category: product.category,
+      size: product.size || undefined,
+      url,
+      offers: {
+        '@type': 'Offer',
+        url,
+        priceCurrency: 'EUR',
+        price: getPriceAsNumber(getDiscountedPrice(product.price, product.discount)).toFixed(2),
+        availability: product.isSold ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
+        itemCondition: 'https://schema.org/UsedCondition',
+        seller: { '@type': 'Organization', name: SITE_NAME },
+      },
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
+        { '@type': 'ListItem', position: 2, name: collection, item: `${SITE_URL}/${product.gender}` },
+        { '@type': 'ListItem', position: 3, name: product.title, item: url },
+      ],
+    },
+  ];
+}
+
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   
@@ -28,10 +95,15 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     return notFound();
   }
 
+  const jsonLd = (
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd(product)).replace(/</g, '\\u003c') }} />
+  );
+
   // Check if product is sold
   if (product.isSold) {
     return (
       <div className="min-h-screen pb-24 bg-surface">
+        {jsonLd}
         <div className="container mx-auto px-4 pt-8 md:pt-16">
           <Link 
             href={`/${product.gender}`}
@@ -73,6 +145,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
   return (
     <div className="min-h-screen pb-24 bg-surface">
+      {jsonLd}
       <div className="container mx-auto px-4 pt-8 md:pt-16">
         
         {/* Back Button */}
