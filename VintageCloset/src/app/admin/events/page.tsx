@@ -347,6 +347,16 @@ export default function EventsListPage() {
 
   return (
     <div className="p-6 lg:p-8">
+      <Link
+        href="/admin/popup"
+        className="mb-6 flex items-center justify-between gap-4 rounded-2xl bg-brand-plum p-4 text-white shadow-sm"
+      >
+        <span>
+          <span className="block font-display text-lg font-bold">Music Pop Up · Bandgasse 43</span>
+          <span className="text-sm text-white/80">DJs, DJ links, photos, journal article and story cards for the pop up weekends</span>
+        </span>
+        <span className="shrink-0 rounded-full bg-brand-teal px-4 py-2 text-sm font-bold">Open →</span>
+      </Link>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>

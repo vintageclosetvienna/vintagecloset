@@ -236,6 +236,10 @@ export default function PopupAdminPage() {
   );
 }
 
+function inviteText(slot: LineupSlot, url: string): string {
+  return `Hey! You play at the Vintage Closet pop up (${DAY_LABEL[slot.day]} ${slot.time}). Add your name, photo and Instagram here and get your story card: ${url}`;
+}
+
 type SaveFn = (patch: Record<string, unknown>, message?: string) => Promise<boolean>;
 
 function LineupStep({ event, save, notify }: { event: Event; save: SaveFn; notify: (t: string) => void }) {
@@ -269,6 +273,10 @@ function LineupStep({ event, save, notify }: { event: Event; save: SaveFn; notif
       setLinks((all) => ({ ...all, [slot.id]: data.url }));
       await navigator.clipboard.writeText(data.url).catch(() => undefined);
       notify('DJ link copied');
+      // Phones: open the share sheet right away (WhatsApp, Instagram DM, SMS…)
+      if (navigator.share && window.matchMedia('(pointer: coarse)').matches) {
+        await navigator.share({ text: inviteText(slot, data.url) }).catch(() => undefined);
+      }
     } catch (error) {
       notify(error instanceof Error ? error.message : 'Could not create the link');
     } finally {
@@ -279,7 +287,7 @@ function LineupStep({ event, save, notify }: { event: Event; save: SaveFn; notif
   return (
     <div>
       <h2 className="font-display text-2xl font-bold">Who plays?</h2>
-      <p className="mb-4 text-sm text-muted">Type today&apos;s DJ name, or send the DJ their own link so they fill in photo, Instagram and genre themselves. Empty = shows as open slot.</p>
+      <p className="mb-4 text-sm text-muted">Type today&apos;s DJ name, or press the teal <b>Send DJ link</b> under a slot: the DJ fills in photo, Instagram and genre themselves. Empty = shows as open slot.</p>
       <div className="grid gap-6 md:grid-cols-2">
         {(['Sat', 'Sun'] as const).map((day) => (
           <div key={day} className="rounded-2xl bg-surface p-3">
@@ -310,25 +318,30 @@ function LineupStep({ event, save, notify }: { event: Event; save: SaveFn; notif
                       <input value={slot.genre ?? ''} onChange={(e) => update(slot.id, { genre: e.target.value })} placeholder="Genre" className="min-w-0 flex-1 rounded-lg border border-hairline px-2 py-1.5 text-xs" />
                     </div>
                   ) : null}
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <div className="mt-3 grid gap-2">
                     <button
                       type="button"
                       onClick={() => invite(slot)}
                       disabled={inviting === slot.id}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-brand-teal px-3 py-1.5 text-xs font-bold text-white disabled:opacity-60"
+                      className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand-teal text-sm font-bold text-white shadow-sm transition-transform active:scale-[0.98] disabled:opacity-60"
                     >
-                      {inviting === slot.id ? <Spinner size={12} className="animate-spin" /> : <Copy size={12} weight="bold" />}
-                      DJ link
+                      {inviting === slot.id ? <Spinner size={16} className="animate-spin" /> : <ShareNetwork size={16} weight="bold" />}
+                      {links[slot.id] ? 'Send DJ link again' : 'Send DJ link'}
                     </button>
                     {links[slot.id] ? (
-                      <a
-                        href={`https://wa.me/?text=${encodeURIComponent(`Hey! You play at the Vintage Closet pop up (${DAY_LABEL[slot.day]} ${slot.time}). Add your name, photo and Instagram here and get your story card: ${links[slot.id]}`)}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 rounded-full bg-[#25D366] px-3 py-1.5 text-xs font-bold text-white"
-                      >
-                        <WhatsappLogo size={12} weight="bold" /> Send to DJ
-                      </a>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <a
+                          href={`https://wa.me/?text=${encodeURIComponent(inviteText(slot, links[slot.id]))}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1.5 rounded-full bg-[#25D366] px-3 py-1.5 text-xs font-bold text-white"
+                        >
+                          <WhatsappLogo size={12} weight="bold" /> WhatsApp
+                        </a>
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-teal">
+                          <Copy size={11} weight="bold" /> link copied
+                        </span>
+                      </div>
                     ) : null}
                     {slot.photo ? <span className="text-[11px] text-brand-teal">photo ✓</span> : null}
                   </div>
