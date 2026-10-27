@@ -59,6 +59,16 @@ export default function EventsPage() {
     fetchData();
   }, []);
 
+  // Quietly refresh every minute, so a newly announced DJ swaps in without a reload
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      getEvents().then((fresh) => {
+        if (fresh.length) setEvents(fresh);
+      }).catch(() => undefined);
+    }, 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+
   return (
     <div className="min-h-screen bg-surface">
       {/* Hero Section */}

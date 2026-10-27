@@ -4,30 +4,33 @@ import Link from 'next/link';
 import type { Event } from '@/lib/events-data';
 import { isOpenSlot, postcardPath, SAMPLE_CARDS, sampleCardPath, viennaToday, weekendLabel, type LineupSlot } from '@/lib/popup';
 
-type Tile =
-  | { kind: 'dj'; key: string; event: Event; slot: LineupSlot }
-  | { kind: 'sample'; key: string; sample: (typeof SAMPLE_CARDS)[number]; event?: Event; slot?: LineupSlot };
+type Tile = { key: string; event: Event; slot: LineupSlot; open: boolean; sample: (typeof SAMPLE_CARDS)[number] };
+
+const MAX_TILES = 12;
 
 /**
- * Endless line-up row for the events page: every booked DJ's one-of-one card slides
- * to the left in a loop (same marquee as the menu's "Just in"; pauses on hover).
- * The eight example cards fill the row by default (marked Sample) and point at the open slots.
+ * Endless line-up row for the events page (same marquee as the menu's "Just in"; pauses on hover).
+ * One tile per upcoming slot, in date order: an open slot shows a small, blurred sample card;
+ * as soon as an artist is saved for that slot, the tile becomes their own sharp card in the same place.
  */
 export function LineupMarquee({ events }: { events: Event[] }) {
   const today = viennaToday();
-  const upcoming = events.filter((e) => (e.endDate || e.date) >= today);
-  const booked: Tile[] = upcoming.flatMap((event) =>
-    event.lineup.filter((s) => !isOpenSlot(s)).map((slot) => ({ kind: 'dj' as const, key: `${event.id}-${slot.id}`, event, slot })),
-  );
-  // The example cards are the default show-off; each one advertises the next open slot
-  const openSlots = upcoming.flatMap((event) => event.lineup.filter(isOpenSlot).map((slot) => ({ event, slot })));
-  const samples: Tile[] = SAMPLE_CARDS.slice(0, Math.max(3, 8 - booked.length)).map((sample, i) => ({
-    kind: 'sample' as const,
-    key: `sample-${sample.n}`,
-    sample,
-    ...(openSlots[i] ?? {}),
+  const upcoming = events
+    .filter((e) => (e.endDate || e.date) >= today)
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const slots = upcoming.flatMap((event) => event.lineup.map((slot) => ({ event, slot }))).slice(0, MAX_TILES);
+  // Open slots take the sample cards in turn (the nth open slot gets sample n)
+  const openOrder = slots.map((_, i) => slots.slice(0, i).filter((s) => isOpenSlot(s.slot)).length);
+  const base: Tile[] = slots.map(({ event, slot }, i) => ({
+    key: `${event.id}-${slot.id}`,
+    event,
+    slot,
+    open: isOpenSlot(slot),
+    sample: SAMPLE_CARDS[openOrder[i] % SAMPLE_CARDS.length],
   }));
-  const base = [...booked, ...samples];
+  if (base.length === 0) return null;
+  const bookedCount = base.filter((t) => !t.open).length;
 
   // Repeat until the row is wider than the screen, then double it for the seamless loop
   let row = base;
@@ -42,44 +45,47 @@ export function LineupMarquee({ events }: { events: Event[] }) {
           <h2 className="sticker-text font-display text-3xl md:text-4xl">The line up</h2>
         </div>
         <p className="hidden max-w-xs text-right text-sm text-muted md:block">
-          {booked.length ? `${booked.length} DJ${booked.length === 1 ? '' : 's'} booked so far — tap a card for the weekend.` : 'Secret line up — the first names drop soon.'}
+          {bookedCount
+            ? `${bookedCount} DJ${bookedCount === 1 ? '' : 's'} revealed so far — the blurry ones are still open.`
+            : 'Secret line up — each card comes into focus when its artist is announced.'}
         </p>
       </div>
       <div className="marquee-fade">
-        <div className="marquee-track flex w-max py-4" style={{ animationDuration: `${row.length * 5}s` }}>
+        <div className="marquee-track flex w-max items-end py-4" style={{ animationDuration: `${row.length * 5}s` }}>
           {items.map((tile, i) => {
             const hidden = i >= row.length;
-            const event = tile.event;
-            const slot = tile.slot;
-            const date = event && slot ? (slot.day === 'Sun' ? event.endDate || event.date : event.date) : null;
-            const src = tile.kind === 'dj' ? postcardPath(tile.event.slug, tile.slot.id) : sampleCardPath(tile.sample.n);
-            const title = tile.kind === 'dj' ? tile.slot.name : date ? 'Open slot — your card here' : 'Sample card';
-            const sub = date && slot ? `${weekendLabel(date)} · ${slot.time}` : 'Every artist gets a one-of-one card';
+            const { event, slot, open } = tile;
+            const date = slot.day === 'Sun' ? event.endDate || event.date : event.date;
+            const when = `${weekendLabel(date)} · ${slot.time}`;
             return (
               <Link
                 key={`${tile.key}-${i}`}
-                href={event ? `/events/${event.slug}` : '/events'}
+                href={`/events/${event.slug}`}
                 aria-hidden={hidden}
                 tabIndex={hidden ? -1 : undefined}
-                className="group mr-4 w-[180px] shrink-0 md:mr-6 md:w-[240px]"
+                className={`group mr-4 shrink-0 md:mr-6 ${open ? 'w-[120px] md:w-[150px]' : 'w-[180px] md:w-[240px]'}`}
                 style={{ transform: `rotate(${i % 2 ? 1.5 : -1.5}deg)` }}
               >
-                <div className="relative">
+                <div className="relative overflow-hidden rounded-2xl">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={src}
-                    alt={tile.kind === 'dj' ? `${tile.slot.name} — ${sub}` : 'Example artist card'}
+                    src={open ? sampleCardPath(tile.sample.n) : postcardPath(event.slug, slot.id)}
+                    alt={open ? 'Open slot — artist not announced yet' : `${slot.name} — ${when}`}
                     loading="lazy"
-                    className="aspect-[4/5] w-full rounded-2xl object-cover shadow-lg transition-transform duration-300 group-hover:-translate-y-1 group-hover:rotate-0 group-hover:shadow-2xl"
+                    className={`aspect-[4/5] w-full object-cover shadow-lg transition-all duration-500 group-hover:-translate-y-1 ${
+                      open ? 'scale-110 blur-md group-hover:blur-sm' : 'group-hover:rotate-0 group-hover:shadow-2xl'
+                    }`}
                   />
-                  {tile.kind === 'sample' ? (
-                    <span className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-brand-plum">
-                      Sample
+                  {open ? (
+                    <span className="absolute inset-0 flex items-center justify-center">
+                      <span className="rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-brand-plum shadow">
+                        ? Open slot
+                      </span>
                     </span>
                   ) : null}
                 </div>
-                <p className="mt-2 truncate text-sm font-semibold">{title}</p>
-                <p className="truncate text-xs text-muted">{sub}</p>
+                <p className={`mt-2 truncate font-semibold ${open ? 'text-xs text-muted' : 'text-sm'}`}>{open ? 'To be announced' : slot.name}</p>
+                <p className="truncate text-[11px] text-muted">{when}</p>
               </Link>
             );
           })}
