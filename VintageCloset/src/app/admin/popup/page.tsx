@@ -31,6 +31,7 @@ import {
   POPUP_SERIES,
   isLiveWeekend,
   isOpenSlot,
+  postcardPath,
   storyCardPath,
   viennaToday,
   weekendLabel,
@@ -539,6 +540,8 @@ function ShareStep({ event }: { event: Event }) {
           <div>
             <p className="mb-2 font-display font-bold">{slot.name} · {DAY_LABEL[slot.day]} {slot.time}</p>
             <ShareStory cardPath={storyCardPath(event.slug, slot.id)} pagePath={`/events/${event.slug}`} text={`${slot.name} plays at Vintage Closet 🎶`} fileName={`${event.slug}-${slot.id}`} compact />
+            <p className="mb-2 mt-3 text-xs font-bold uppercase tracking-wider text-brand-plum">Postcard · vintage credentials</p>
+            <ShareStory cardPath={postcardPath(event.slug, slot.id)} pagePath={`/events/${event.slug}`} text={`${slot.name} — Vintage Closet credentials 📮`} fileName={`${event.slug}-${slot.id}-postcard`} compact />
           </div>
         </div>
       ))}

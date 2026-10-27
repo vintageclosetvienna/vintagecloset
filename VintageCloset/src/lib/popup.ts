@@ -80,3 +80,49 @@ export function isLiveWeekend(date: string, endDate?: string | null): boolean {
 export function storyCardPath(slug: string, slotId?: string): string {
   return `/events/${slug}/story${slotId ? `?dj=${encodeURIComponent(slotId)}` : ''}`;
 }
+
+export function postcardPath(slug: string, slotId: string): string {
+  return `/events/${slug}/postcard?dj=${encodeURIComponent(slotId)}`;
+}
+
+// The four approved brand colourways (BRAND.md) as postcard palettes
+const POSTCARD_PALETTES = [
+  { paper: '#F6EFE4', ink: '#602140', title: '#4CC2BA', accent: '#602140' },
+  { paper: '#01DBCA', ink: '#602140', title: '#ffffff', accent: '#602140' },
+  { paper: '#602140', ink: '#01DBCA', title: '#F6EFE4', accent: '#01DBCA' },
+  { paper: '#111111', ink: '#F6EFE4', title: '#4CC2BA', accent: '#4CC2BA' },
+];
+const RANKS = [
+  'Certified Selector',
+  'Keeper of the Crates',
+  'Archive-Grade Groove',
+  'First Edition Sound',
+  'Hand-Picked, One of One',
+  'Mint Condition Mixer',
+];
+const POSTMARKS = ['BANDGASSE 43', 'NEUBAU POST', 'VINTAGE MAIL', 'POP UP POST'];
+
+/** Same seed, same postcard: palette, rank, stamp tilt, postmark and serial. */
+export function postcardDesign(seed: string) {
+  let hash = 2166136261;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash ^= seed.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  let state = hash >>> 0 || 1;
+  const next = () => {
+    state ^= state << 13;
+    state ^= state >>> 17;
+    state ^= state << 5;
+    state >>>= 0;
+    return state / 4294967296;
+  };
+  const pick = <T,>(list: T[]): T => list[Math.floor(next() * list.length)];
+  return {
+    ...pick(POSTCARD_PALETTES),
+    rank: pick(RANKS),
+    postmark: pick(POSTMARKS),
+    tilt: Math.round((next() * 8 - 4) * 10) / 10,
+    serial: String(Math.floor(next() * 9000) + 1000),
+  };
+}

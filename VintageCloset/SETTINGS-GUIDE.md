@@ -70,5 +70,7 @@ Short how-tos for everything added since October 2026. Code changes are one line
 - Line up: type a DJ name (empty = shows as "Open slot"), or press **DJ link** and **Send to DJ**: the DJ fills in name, photo, Instagram, genre and bio at `/dj/<link>` and gets a personal story card. Links stop working a week after the weekend.
 - Photos go to the `event-images` bucket; the star sets the cover. Removing a photo only hides it from the gallery.
 - Journal: **Write today's article** saves an AI recap as a draft (category News). Check and publish it in Admin → Journal. Needs `OPENAI_API_KEY` (model `OPENAI_MODEL`, default as in AI product autofill).
+- When a DJ saves their profile it is live at once; the team gets an activity-log entry and (first time only) an email to owners/managers with the story card + postcard. Needs `RESEND_API_KEY`.
+- Postcard (1080×1350): `/events/<slug>/postcard?dj=<slot id>` — one-of-one colourway, rank, postmark and serial seeded from event + slot, so it never changes for that artist.
 - Public: `/events` (cards with line-up chips) and `/events/<slug>` (line up, gallery, share). Story cards (1080×1920): `/events/<slug>/story` and `?dj=<slot id>`.
 - Data: `events.lineup`, `gallery`, `end_date`, `series`, `today_note`, `journal_slug`; DJ links in `event_dj_invites` (server only). SQL: `supabase/schemaPopupWeekends.sql`.

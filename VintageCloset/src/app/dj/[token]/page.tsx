@@ -5,7 +5,8 @@ import { useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Camera, Check, MusicNotes, Spinner } from '@phosphor-icons/react';
 import { ShareStory } from '@/components/events/ShareStory';
-import { DAY_LABEL, storyCardPath, weekendLabel, type LineupSlot } from '@/lib/popup';
+import Link from 'next/link';
+import { DAY_LABEL, postcardPath, storyCardPath, weekendLabel, type LineupSlot } from '@/lib/popup';
 
 type Invite = {
   event: { slug: string; title: string; date: string; endDate: string | null; time: string | null; location: string; image: string | null };
@@ -64,6 +65,7 @@ export default function DjInvitePage() {
   const { event, slot } = invite;
   const dayDate = slot.day === 'Sun' ? event.endDate || event.date : event.date;
   const card = `${storyCardPath(event.slug, slot.id)}&v=${cardVersion}`;
+  const postcard = `${postcardPath(event.slug, slot.id)}&v=${cardVersion}`;
 
   return (
     <div className="min-h-screen bg-surface pb-16">
@@ -125,9 +127,23 @@ export default function DjInvitePage() {
           <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="grid gap-4 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-hairline">
             <h2 className="font-display text-2xl font-bold">Tell your fans</h2>
             <p className="text-sm text-muted">Your personal story card. On your phone, &quot;Share story card&quot; sends it straight into your Instagram or WhatsApp story.</p>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={card} alt="Your story card" className="mx-auto w-48 rotate-2 rounded-2xl shadow-2xl" />
+            <div className="grid grid-cols-2 items-end gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={card} alt="Your story card" className="w-full -rotate-2 rounded-2xl shadow-2xl" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={postcard} alt="Your vintage postcard" className="w-full rotate-2 rounded-xl shadow-2xl" />
+            </div>
+            <p className="text-xs font-bold uppercase tracking-wider text-brand-plum">Story card</p>
             <ShareStory cardPath={card} pagePath={`/events/${event.slug}`} text={`I play at the Vintage Closet pop up, ${DAY_LABEL[slot.day]} ${slot.time} 🎶`} fileName={`${event.slug}-${slot.id}`} />
+            <p className="mt-2 text-xs font-bold uppercase tracking-wider text-brand-plum">Your one-of-one postcard · vintage credentials</p>
+            <ShareStory cardPath={postcard} pagePath={`/events/${event.slug}`} text={`My Vintage Closet credentials 📮 ${DAY_LABEL[slot.day]} ${slot.time}`} fileName={`${event.slug}-${slot.id}-postcard`} compact />
+            <Link href="/new-arrivals" className="mt-2 flex items-center justify-between rounded-2xl bg-brand-teal-bright/20 p-4">
+              <span>
+                <span className="block font-display font-bold">Dress the part</span>
+                <span className="text-sm text-muted">Dig through the new arrivals before your set.</span>
+              </span>
+              <span className="shrink-0 rounded-full bg-brand-plum px-4 py-2 text-sm font-bold text-white">New arrivals →</span>
+            </Link>
           </motion.section>
         ) : null}
       </div>
