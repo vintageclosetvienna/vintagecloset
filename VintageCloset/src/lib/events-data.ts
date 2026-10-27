@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from './supabase';
+import { parseLineup, type LineupSlot } from './popup';
 
 // Frontend Event interface
 export interface Event {
@@ -13,6 +14,12 @@ export interface Event {
   status: 'Upcoming' | 'Coming Soon' | 'Past';
   spotsLeft: number | null;
   isPublished?: boolean;
+  endDate: string | null;
+  series: string | null;
+  lineup: LineupSlot[];
+  gallery: string[];
+  todayNote: string;
+  journalSlug: string | null;
 }
 
 // Database Event type
@@ -30,6 +37,12 @@ export interface DbEvent {
   is_published: boolean;
   created_at: string;
   updated_at: string;
+  end_date?: string | null;
+  series?: string | null;
+  lineup?: unknown;
+  gallery?: string[] | null;
+  today_note?: string | null;
+  journal_slug?: string | null;
 }
 
 // Convert database event to frontend event
@@ -46,6 +59,12 @@ function dbToEvent(db: DbEvent): Event {
     status: db.status,
     spotsLeft: db.spots_left,
     isPublished: db.is_published,
+    endDate: db.end_date ?? null,
+    series: db.series ?? null,
+    lineup: parseLineup(db.lineup),
+    gallery: db.gallery ?? [],
+    todayNote: db.today_note ?? '',
+    journalSlug: db.journal_slug ?? null,
   };
 }
 

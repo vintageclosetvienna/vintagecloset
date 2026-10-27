@@ -1,0 +1,145 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import { useParams } from 'next/navigation';
+import { motion } from 'framer-motion';
+import { Camera, Check, MusicNotes, Spinner } from '@phosphor-icons/react';
+import { ShareStory } from '@/components/events/ShareStory';
+import { DAY_LABEL, storyCardPath, weekendLabel, type LineupSlot } from '@/lib/popup';
+
+type Invite = {
+  event: { slug: string; title: string; date: string; endDate: string | null; time: string | null; location: string; image: string | null };
+  slot: LineupSlot;
+};
+
+/** A DJ's own link: fill in name, photo and links, then share the personal story card with fans. */
+export default function DjInvitePage() {
+  const { token } = useParams<{ token: string }>();
+  const [invite, setInvite] = useState<Invite | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [cardVersion, setCardVersion] = useState(0);
+  const form = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    fetch(`/api/popup/dj/${token}`)
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'This link is not valid.');
+        setInvite(data);
+        setSaved(!!data.slot.name);
+      })
+      .catch((e: Error) => setError(e.message));
+  }, [token]);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.current) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/popup/dj/${token}`, { method: 'POST', body: new FormData(form.current) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Could not save.');
+      setInvite((current) => (current ? { ...current, slot: data.slot } : current));
+      setSaved(true);
+      setCardVersion((v) => v + 1);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!invite) {
+    return (
+      <div className="flex min-h-[70vh] items-center justify-center px-4 text-center">
+        {error ? <p className="text-lg font-semibold">{error}</p> : <Spinner size={32} className="animate-spin text-brand-teal" />}
+      </div>
+    );
+  }
+
+  const { event, slot } = invite;
+  const dayDate = slot.day === 'Sun' ? event.endDate || event.date : event.date;
+  const card = `${storyCardPath(event.slug, slot.id)}&v=${cardVersion}`;
+
+  return (
+    <div className="min-h-screen bg-surface pb-16">
+      <section className="bg-brand-plum px-4 pb-10 pt-28 text-white">
+        <div className="mx-auto max-w-xl">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-teal-bright">You&apos;re on the line up</p>
+          <motion.h1 initial={{ rotate: -4, scale: 0.9, opacity: 0 }} animate={{ rotate: -2, scale: 1, opacity: 1 }} className="sticker-text mt-2 font-display text-5xl">
+            {event.title}
+          </motion.h1>
+          <p className="mt-3 text-white/85">
+            {DAY_LABEL[slot.day]} · {weekendLabel(dayDate)} · {slot.time}
+            <br />
+            {event.location}
+          </p>
+        </div>
+      </section>
+
+      <div className="mx-auto grid max-w-xl gap-8 px-4 pt-8">
+        <form ref={form} onSubmit={submit} className="grid gap-4 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-hairline">
+          <h2 className="font-display text-2xl font-bold">Your artist info</h2>
+          <label className="mx-auto flex cursor-pointer flex-col items-center gap-2">
+            <span className="relative flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-brand-teal/15 ring-4 ring-brand-teal">
+              {preview || slot.photo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={preview || slot.photo} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <MusicNotes size={36} className="text-brand-plum" />
+              )}
+              <span className="absolute bottom-1 right-1 rounded-full bg-brand-plum p-1.5 text-white"><Camera size={14} weight="bold" /></span>
+            </span>
+            <span className="text-xs font-semibold text-muted">Your photo (goes on your story card)</span>
+            <input
+              name="photo"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              hidden
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                setPreview(file ? URL.createObjectURL(file) : null);
+              }}
+            />
+          </label>
+          <Field name="name" label="DJ name" defaultValue={slot.name} required />
+          <Field name="genre" label="Sound / genre" defaultValue={slot.genre} placeholder="e.g. 90s house, disco edits" />
+          <Field name="instagram" label="Instagram" defaultValue={slot.instagram ? `@${slot.instagram}` : ''} placeholder="@yourname" />
+          <Field name="soundcloud" label="SoundCloud or Mixcloud link" defaultValue={slot.soundcloud} placeholder="https://soundcloud.com/…" />
+          <label className="grid gap-1 text-sm font-semibold">
+            Short bio
+            <textarea name="bio" defaultValue={slot.bio} maxLength={280} rows={3} className="rounded-xl border border-hairline px-3 py-2.5 font-normal" />
+          </label>
+          {error ? <p className="text-sm text-red-600">{error}</p> : null}
+          <button type="submit" disabled={saving} className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-ink font-bold text-white disabled:opacity-60">
+            {saving ? <Spinner size={18} className="animate-spin" /> : saved ? <Check size={18} weight="bold" /> : null}
+            {saving ? 'Saving…' : saved ? 'Saved — update again' : 'Save my info'}
+          </button>
+        </form>
+
+        {saved ? (
+          <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="grid gap-4 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-hairline">
+            <h2 className="font-display text-2xl font-bold">Tell your fans</h2>
+            <p className="text-sm text-muted">Your personal story card. On your phone, &quot;Share story card&quot; sends it straight into your Instagram or WhatsApp story.</p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={card} alt="Your story card" className="mx-auto w-48 rotate-2 rounded-2xl shadow-2xl" />
+            <ShareStory cardPath={card} pagePath={`/events/${event.slug}`} text={`I play at the Vintage Closet pop up, ${DAY_LABEL[slot.day]} ${slot.time} 🎶`} fileName={`${event.slug}-${slot.id}`} />
+          </motion.section>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function Field({ name, label, defaultValue, placeholder, required }: { name: string; label: string; defaultValue?: string; placeholder?: string; required?: boolean }) {
+  return (
+    <label className="grid gap-1 text-sm font-semibold">
+      {label}
+      <input name={name} defaultValue={defaultValue} placeholder={placeholder} required={required} className="rounded-xl border border-hairline px-3 py-2.5 font-normal" />
+    </label>
+  );
+}

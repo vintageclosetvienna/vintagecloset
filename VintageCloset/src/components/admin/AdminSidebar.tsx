@@ -16,8 +16,7 @@ import {
   Sparkle,
   Receipt,
   EnvelopeSimple,
-  Tray
-} from '@phosphor-icons/react';
+  Tray, MusicNotes } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Logo } from '@/components/ui/Logo';
 import { useAuth } from '@/lib/auth';
@@ -30,6 +29,7 @@ const NAV_ITEMS = [
   { href: '/admin/gutscheine', label: 'Gutscheine', icon: Ticket },
   { href: '/admin/newsletter', label: 'Newsletter', icon: EnvelopeSimple },
   { href: '/admin/journal', label: 'Journal', icon: Notebook },
+  { href: '/admin/popup', label: 'Music Pop Up', icon: MusicNotes },
   { href: '/admin/events', label: 'Events', icon: CalendarBlank },
   { href: '/admin/archive', label: 'Archive Stories', icon: Sparkle },
   { href: '/admin/media', label: 'Site Images', icon: Images },

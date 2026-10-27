@@ -64,3 +64,11 @@ Short how-tos for everything added since October 2026. Code changes are one line
 - Private tables (orders, pickup codes, newsletter) can't be read with the public website key; only logged-in admins and the server can. Rules live in `supabase/*.sql`.
 - Check anytime: Supabase → project **vintageclosetvienna → Advisors → Security Advisor**. Anything marked *Error* needs fixing; ask Claude with the screenshot.
 - Recommended one-click setting: Supabase → **Authentication → Sign In / Providers → Email → Leaked password protection** → on (blocks admin passwords known from data leaks).
+
+## Music pop up (Bandgasse 43)
+- Control room: **Admin → Music Pop Up** (`/admin/popup`). Pick the weekend, then the five steps: Line up → Today → Photos → Journal → Share.
+- Line up: type a DJ name (empty = shows as "Open slot"), or press **DJ link** and **Send to DJ**: the DJ fills in name, photo, Instagram, genre and bio at `/dj/<link>` and gets a personal story card. Links stop working a week after the weekend.
+- Photos go to the `event-images` bucket; the star sets the cover. Removing a photo only hides it from the gallery.
+- Journal: **Write today's article** saves an AI recap as a draft (category News). Check and publish it in Admin → Journal. Needs `OPENAI_API_KEY` (model `OPENAI_MODEL`, default as in AI product autofill).
+- Public: `/events` (cards with line-up chips) and `/events/<slug>` (line up, gallery, share). Story cards (1080×1920): `/events/<slug>/story` and `?dj=<slot id>`.
+- Data: `events.lineup`, `gallery`, `end_date`, `series`, `today_note`, `journal_slug`; DJ links in `event_dj_invites` (server only). SQL: `supabase/schemaPopupWeekends.sql`.

@@ -94,6 +94,12 @@ export interface DbEvent {
   is_published: boolean;
   created_at: string;
   updated_at: string;
+  end_date?: string | null;
+  series?: string | null;
+  lineup?: unknown;
+  gallery?: string[] | null;
+  today_note?: string | null;
+  journal_slug?: string | null;
 }
 
 // Database schema type

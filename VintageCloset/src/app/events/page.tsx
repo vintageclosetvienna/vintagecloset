@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
+import { isLiveWeekend, isOpenSlot, weekendLabel } from '@/lib/popup';
 import { Reveal } from '@/components/shared/Reveal';
 import { Button } from '@/components/ui/Button';
 import { SafeImage } from '@/components/ui/SafeImage';
@@ -144,14 +146,14 @@ export default function EventsPage() {
                         </div>
                         
                         {/* Content - Fixed height to match image */}
-                        <div className="p-6 md:p-8 h-auto md:h-[260px] flex flex-col">
+                        <div className="p-6 md:p-8 h-auto md:min-h-[260px] flex flex-col">
                           {/* Header Row */}
                           <div className="flex items-start justify-between gap-4 mb-3">
                             <div className="min-w-0 flex-1">
                               <h2 className="text-xl md:text-2xl font-display font-bold text-ink group-hover:text-accent-start transition-colors leading-tight truncate">
                                 {event.title}
                               </h2>
-                              <p className="text-sm text-muted mt-1">{formatEventDate(event.date)}</p>
+                              <p className="text-sm text-muted mt-1">{event.endDate ? weekendLabel(event.date, event.endDate) : formatEventDate(event.date)}</p>
                             </div>
                             
                             {/* Date Box */}
@@ -166,7 +168,7 @@ export default function EventsPage() {
                           </div>
                           
                           {/* Description - Fixed height with clamp */}
-                          <p className="text-muted text-sm leading-relaxed line-clamp-2 h-[40px] mb-auto">
+                          <p className="text-muted text-sm leading-relaxed line-clamp-2 mb-auto">
                             {event.description}
                           </p>
                           
@@ -184,23 +186,36 @@ export default function EventsPage() {
                             )}
                           </div>
                           
-                          {/* Actions - Fixed at bottom */}
+                          {/* Line-up preview and the way into the weekend page */}
+                          {event.lineup.length > 0 ? (
+                            <div className="mb-4 flex flex-wrap gap-1.5">
+                              {event.lineup.map((slot) => (
+                                <span
+                                  key={slot.id}
+                                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                                    isOpenSlot(slot)
+                                      ? 'border border-dashed border-brand-teal text-brand-teal'
+                                      : 'bg-brand-teal/15 text-brand-plum'
+                                  }`}
+                                >
+                                  {slot.day} · {isOpenSlot(slot) ? 'open' : slot.name}
+                                </span>
+                              ))}
+                            </div>
+                          ) : null}
                           <div className="flex items-center gap-3">
-                            {event.status === 'Upcoming' ? (
-                              <>
-                                <Button size="sm" className="min-w-[120px]">
-                                  RSVP Now
-                                </Button>
-                                {event.spotsLeft !== null && (
-                                  <span className="text-xs text-muted">{event.spotsLeft} spots left</span>
-                                )}
-                              </>
-                            ) : (
-                              <Button variant="secondary" size="sm" className="group/btn">
-                                <Bell weight="bold" size={14} className="mr-2" />
-                                Notify Me
+                            <Link href={`/events/${event.slug}`}>
+                              <Button size="sm" className="min-w-[120px]">
+                                {event.status === 'Past' ? 'See the photos' : 'Line up & details'}
                               </Button>
-                            )}
+                            </Link>
+                            {isLiveWeekend(event.date, event.endDate) ? (
+                              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-plum">
+                                <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" /> Live now
+                              </span>
+                            ) : event.spotsLeft !== null ? (
+                              <span className="text-xs text-muted">{event.spotsLeft} spots left</span>
+                            ) : null}
                           </div>
                         </div>
                       </div>
