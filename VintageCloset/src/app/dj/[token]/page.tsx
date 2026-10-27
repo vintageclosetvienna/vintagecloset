@@ -70,7 +70,7 @@ export default function DjInvitePage() {
       <section className="bg-brand-plum px-4 pb-10 pt-28 text-white">
         <div className="mx-auto max-w-xl">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-teal-bright">You&apos;re on the line up</p>
-          <motion.h1 initial={{ rotate: -4, scale: 0.9, opacity: 0 }} animate={{ rotate: -2, scale: 1, opacity: 1 }} className="sticker-text mt-2 font-display text-5xl">
+          <motion.h1 initial={{ rotate: -4, scale: 0.9 }} animate={{ rotate: -2, scale: 1 }} className="sticker-text mt-2 font-display text-5xl">
             {event.title}
           </motion.h1>
           <p className="mt-3 text-white/85">
