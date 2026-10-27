@@ -29,6 +29,8 @@ import { supabase } from '@/lib/supabase';
 import {
   DAY_LABEL,
   POPUP_SERIES,
+  freshCardSeed,
+  takenCardKeys,
   isLiveWeekend,
   isOpenSlot,
   postcardPath,
@@ -198,7 +200,7 @@ export default function PopupAdminPage() {
               exit={{ opacity: 0, y: -8 }}
               className="rounded-3xl border border-hairline bg-white p-4 shadow-sm md:p-6"
             >
-              {step === 'lineup' ? <LineupStep event={event} save={save} notify={notify} /> : null}
+              {step === 'lineup' ? <LineupStep event={event} allEvents={events} save={save} notify={notify} /> : null}
               {step === 'info' ? <InfoStep event={event} save={save} /> : null}
               {step === 'photos' ? <PhotosStep event={event} save={save} notify={notify} /> : null}
               {step === 'journal' ? <JournalStep event={event} notify={notify} /> : null}
@@ -243,7 +245,7 @@ function inviteText(slot: LineupSlot, url: string): string {
 
 type SaveFn = (patch: Record<string, unknown>, message?: string) => Promise<boolean>;
 
-function LineupStep({ event, save, notify }: { event: Event; save: SaveFn; notify: (t: string) => void }) {
+function LineupStep({ event, allEvents, save, notify }: { event: Event; allEvents: Event[]; save: SaveFn; notify: (t: string) => void }) {
   const [slots, setSlots] = useState<LineupSlot[]>(event.lineup);
   const [inviting, setInviting] = useState<string | null>(null);
   const [links, setLinks] = useState<Record<string, string>>({});
@@ -256,7 +258,17 @@ function LineupStep({ event, save, notify }: { event: Event; save: SaveFn; notif
     setSlots((list) => [...list, { id: `s${Date.now().toString(36)}`, day, time: '' }]);
 
   const persist = async () => {
-    const clean = slots.map((s) => Object.fromEntries(Object.entries(s).filter(([, v]) => v !== undefined && v !== '')));
+    // Every newly named artist gets their own card look, never one already in use
+    const others = allEvents.map((e) => (e.id === event.id ? { id: e.id, lineup: [] } : e));
+    const named = slots.map((s) => (s.cardSeed && !isOpenSlot(s) ? s : { ...s, cardSeed: undefined }));
+    const withSeeds = named.map((s, i) => {
+      if (isOpenSlot(s) || s.cardSeed) return s;
+      const taken = takenCardKeys([...others, { id: event.id, lineup: named.slice(0, i).concat(named.slice(i + 1)).filter((x) => x.cardSeed) }]);
+      const seeded = { ...s, cardSeed: freshCardSeed(taken) };
+      named[i] = seeded;
+      return seeded;
+    });
+    const clean = withSeeds.map((s) => Object.fromEntries(Object.entries(s).filter(([, v]) => v !== undefined && v !== '')));
     await save({ lineup: clean }, 'Line up saved');
   };
 

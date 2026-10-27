@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { isLiveWeekend, isOpenSlot, weekendLabel } from '@/lib/popup';
+import { LineupMarquee } from '@/components/events/LineupMarquee';
 import { Reveal } from '@/components/shared/Reveal';
 import { Button } from '@/components/ui/Button';
 import { SafeImage } from '@/components/ui/SafeImage';
@@ -90,6 +91,9 @@ export default function EventsPage() {
           </Reveal>
         </div>
       </section>
+
+      {/* Line-up showoff: every DJ card sliding left in a loop */}
+      {!isLoading ? <LineupMarquee events={events} /> : null}
 
       {/* Events List */}
       <section className="py-16 md:py-24">

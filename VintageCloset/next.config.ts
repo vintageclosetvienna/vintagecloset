@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
   // The artist card route reads its font file at runtime
   outputFileTracingIncludes: {
     '/events/[slug]/postcard': ['./src/assets/fonts/**'],
+    '/events/cards/sample/[n]': ['./src/assets/fonts/**'],
   },
   images: {
     remotePatterns: [

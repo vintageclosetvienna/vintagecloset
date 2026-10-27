@@ -12,6 +12,8 @@ export interface LineupSlot {
   soundcloud?: string;
   bio?: string;
   photo?: string;
+  /** Seed of the artist's one-of-one card; set once on first save, never changed. */
+  cardSeed?: string;
 }
 
 export const POPUP_SERIES = 'popup-bandgasse-43';
@@ -40,6 +42,7 @@ export function parseLineup(value: unknown): LineupSlot[] {
         soundcloud: text('soundcloud', 200) || undefined,
         bio: text('bio', 280) || undefined,
         photo: text('photo', 500) || undefined,
+        cardSeed: text('cardSeed', 60) || undefined,
       } satisfies LineupSlot;
     });
 }
@@ -136,9 +139,13 @@ export function postcardDesign(seed: string) {
     return state / 4294967296;
   };
   const pick = <T,>(list: readonly T[]): T => list[Math.floor(next() * list.length)];
+  const layout = pick(LAYOUTS);
+  const palette = Math.floor(next() * PALETTES.length);
   return {
-    layout: pick(LAYOUTS),
-    ...pick(PALETTES),
+    /** Layout + colourway: what makes two cards look the same at a glance. */
+    key: `${layout}:${palette}`,
+    layout,
+    ...PALETTES[palette],
     pattern: pick(PATTERNS),
     filter: pick(FILTERS),
     rank: pick(RANKS),
@@ -148,4 +155,50 @@ export function postcardDesign(seed: string) {
     tilt: Math.round((next() * 10 - 5) * 10) / 10,
     serial: String(Math.floor(next() * 9000) + 1000),
   };
+}
+
+/** The seed a slot's card is drawn from (stored seed, or the old event + slot + name fallback). */
+export function slotCardSeed(eventId: string, slot: LineupSlot): string {
+  return slot.cardSeed || `${eventId}:${slot.id}:${slot.name ?? ''}`;
+}
+
+// The eight example cards (made 27 Oct 2026): the default show-off in the events slider.
+// Real artists never get one of these looks.
+const SAMPLE_EVENT = 'b22b9132-5126-4f11-b7d5-8e4075ec7de9';
+export const SAMPLE_CARDS = [
+  { n: 1, name: 'DJ Mira Velvet', genre: 'disco edits', day: 'Sat' },
+  { n: 2, name: 'Kassette Karl', genre: '90s house', day: 'Sun' },
+  { n: 3, name: 'Lou Neubau', genre: 'soul & funk', day: 'Sat' },
+  { n: 4, name: 'Noor Vinyl', genre: 'arabic grooves', day: 'Sun' },
+  { n: 5, name: 'Selecta Rosa', genre: 'dancehall', day: 'Sat' },
+  { n: 6, name: 'Moritz Mono', genre: 'minimal', day: 'Sun' },
+  { n: 7, name: 'Tape Deck Tina', genre: 'italo disco', day: 'Sat' },
+  { n: 8, name: 'Habibi Hertz', genre: 'oriental house', day: 'Sun' },
+].map((card) => ({ ...card, seed: `${SAMPLE_EVENT}:demo${card.n}:${card.name}` }));
+
+export function sampleCardPath(n: number): string {
+  return `/events/cards/sample/${n}`;
+}
+
+/** Looks already taken: the sample cards plus every named slot in these events. */
+export function takenCardKeys(events: { id: string; lineup: LineupSlot[] }[], skip?: { eventId: string; slotId: string }): Set<string> {
+  const keys = new Set(SAMPLE_CARDS.map((card) => postcardDesign(card.seed).key));
+  for (const event of events) {
+    for (const slot of event.lineup) {
+      if (isOpenSlot(slot)) continue;
+      if (skip && skip.eventId === event.id && skip.slotId === slot.id) continue;
+      keys.add(postcardDesign(slotCardSeed(event.id, slot)).key);
+    }
+  }
+  return keys;
+}
+
+/** A fresh random seed whose look (layout + colourway) nobody has yet. */
+export function freshCardSeed(taken: Set<string>): string {
+  let seed = '';
+  for (let tries = 0; tries < 400; tries += 1) {
+    seed = `card-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+    if (!taken.has(postcardDesign(seed).key)) return seed;
+  }
+  return seed; // all 72 looks used: still unique in pattern, photo look, wording and serial
 }

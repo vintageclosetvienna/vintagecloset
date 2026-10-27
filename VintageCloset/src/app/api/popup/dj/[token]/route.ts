@@ -3,9 +3,12 @@ import { createServerClient } from "@/lib/supabase";
 import {
   cleanHandle,
   DAY_LABEL,
+  freshCardSeed,
   parseLineup,
+  POPUP_SERIES,
   postcardPath,
   storyCardPath,
+  takenCardKeys,
   type LineupSlot,
 } from "@/lib/popup";
 import { brandEmail, escapeHtml, sendEmail } from "@/lib/email";
@@ -175,6 +178,19 @@ export async function POST(
     next.photo = db.storage
       .from("event-images")
       .getPublicUrl(path).data.publicUrl;
+  }
+
+  // First save: the artist gets their own card look, one nobody else (and no sample) has
+  if (!next.cardSeed) {
+    const { data: series } = await db
+      .from("events")
+      .select("id, lineup")
+      .eq("series" as never, POPUP_SERIES as never);
+    const all = ((series as unknown as { id: string; lineup: unknown }[] | null) ?? []).map((e) => ({
+      id: e.id,
+      lineup: parseLineup(e.lineup),
+    }));
+    next.cardSeed = freshCardSeed(takenCardKeys(all, { eventId: event.id, slotId: slot.id }));
   }
 
   // Strip empty fields so the jsonb stays tidy
