@@ -5,6 +5,10 @@ const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.vintagecloset
 const VERCEL_HOST = 'vintagecloset.vercel.app';
 
 const nextConfig: NextConfig = {
+  // The artist card route reads its font file at runtime
+  outputFileTracingIncludes: {
+    '/events/[slug]/postcard': ['./src/assets/fonts/**'],
+  },
   images: {
     remotePatterns: [
       {

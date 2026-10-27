@@ -14,12 +14,15 @@ export function ShareStory({
   text,
   fileName,
   compact = false,
+  onShared,
 }: {
   cardPath: string;
   pagePath: string;
   text: string;
   fileName: string;
   compact?: boolean;
+  /** Called once the card or link actually went out (share sheet, download, WhatsApp, copy). */
+  onShared?: () => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -33,12 +36,14 @@ export function ShareStory({
       const file = new File([blob], `${fileName}.png`, { type: 'image/png' });
       if (navigator.canShare?.({ files: [file] })) {
         await navigator.share({ files: [file], text: `${text} ${pageUrl}` });
+        onShared?.();
       } else {
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = file.name;
         link.click();
         URL.revokeObjectURL(link.href);
+        onShared?.();
       }
     } catch {
       // The person closed the share sheet; nothing to do.
@@ -51,6 +56,7 @@ export function ShareStory({
     try {
       await navigator.clipboard.writeText(pageUrl);
       setCopied(true);
+      onShared?.();
       window.setTimeout(() => setCopied(false), 1800);
     } catch {
       /* clipboard blocked */
@@ -76,6 +82,7 @@ export function ShareStory({
         href={`https://wa.me/?text=${encodeURIComponent(`${text} ${pageUrl}`)}`}
         target="_blank"
         rel="noreferrer"
+        onClick={() => onShared?.()}
         className={`${pill} bg-[#25D366] text-white hover:opacity-90`}
       >
         <WhatsappLogo weight="bold" size={compact ? 14 : 18} />

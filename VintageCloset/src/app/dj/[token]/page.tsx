@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { Camera, Check, MusicNotes, Spinner } from '@phosphor-icons/react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Camera, Check, MusicNotes, Spinner, X } from '@phosphor-icons/react';
 import { ShareStory } from '@/components/events/ShareStory';
 import Link from 'next/link';
 import { DAY_LABEL, postcardPath, storyCardPath, weekendLabel, type LineupSlot } from '@/lib/popup';
@@ -22,6 +22,17 @@ export default function DjInvitePage() {
   const [saved, setSaved] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [cardVersion, setCardVersion] = useState(0);
+  // The card pops up every time this link opens, until the DJ has shared it once (or the link expires)
+  const [popup, setPopup] = useState(false);
+  const [flipped, setFlipped] = useState(false);
+  const sharedKey = `vc.dj.shared.${token}`;
+  const markShared = () => {
+    try {
+      window.localStorage.setItem(sharedKey, '1');
+    } catch {
+      /* private mode */
+    }
+  };
   const form = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -31,6 +42,13 @@ export default function DjInvitePage() {
         if (!response.ok) throw new Error(data.error || 'This link is not valid.');
         setInvite(data);
         setSaved(!!data.slot.name);
+        let shared = false;
+        try {
+          shared = window.localStorage.getItem(sharedKey) === '1';
+        } catch {
+          /* private mode */
+        }
+        if (data.slot.name && !shared) window.setTimeout(() => setPopup(true), 500);
       })
       .catch((e: Error) => setError(e.message));
   }, [token]);
@@ -47,6 +65,8 @@ export default function DjInvitePage() {
       setInvite((current) => (current ? { ...current, slot: data.slot } : current));
       setSaved(true);
       setCardVersion((v) => v + 1);
+      setFlipped(false);
+      setPopup(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save.');
     } finally {
@@ -134,9 +154,9 @@ export default function DjInvitePage() {
               <img src={postcard} alt="Your vintage postcard" className="w-full rotate-2 rounded-xl shadow-2xl" />
             </div>
             <p className="text-xs font-bold uppercase tracking-wider text-brand-plum">Story card</p>
-            <ShareStory cardPath={card} pagePath={`/events/${event.slug}`} text={`I play at the Vintage Closet pop up, ${DAY_LABEL[slot.day]} ${slot.time} 🎶`} fileName={`${event.slug}-${slot.id}`} />
+            <ShareStory cardPath={card} pagePath={`/events/${event.slug}`} text={`I play at the Vintage Closet pop up, ${DAY_LABEL[slot.day]} ${slot.time} 🎶`} fileName={`${event.slug}-${slot.id}`} onShared={markShared} />
             <p className="mt-2 text-xs font-bold uppercase tracking-wider text-brand-plum">Your one-of-one postcard · vintage credentials</p>
-            <ShareStory cardPath={postcard} pagePath={`/events/${event.slug}`} text={`My Vintage Closet credentials 📮 ${DAY_LABEL[slot.day]} ${slot.time}`} fileName={`${event.slug}-${slot.id}-postcard`} compact />
+            <ShareStory cardPath={postcard} pagePath={`/events/${event.slug}`} text={`My Vintage Closet credentials 📮 ${DAY_LABEL[slot.day]} ${slot.time}`} fileName={`${event.slug}-${slot.id}-postcard`} compact onShared={markShared} />
             <Link href="/new-arrivals" className="mt-2 flex items-center justify-between rounded-2xl bg-brand-teal-bright/20 p-4">
               <span>
                 <span className="block font-display font-bold">Dress the part</span>
@@ -147,6 +167,47 @@ export default function DjInvitePage() {
           </motion.section>
         ) : null}
       </div>
+
+      <AnimatePresence>
+        {popup && saved ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[90] flex items-center justify-center overflow-y-auto bg-black/80 p-4 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ y: 40, scale: 0.9 }}
+              animate={{ y: 0, scale: 1 }}
+              transition={{ type: 'spring', damping: 18 }}
+              className="relative w-full max-w-sm rounded-3xl bg-white p-5 text-center"
+            >
+              <button type="button" aria-label="Close" onClick={() => setPopup(false)} className="absolute right-3 top-3 rounded-full bg-surface p-2">
+                <X size={16} />
+              </button>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-plum">Your one-of-one card</p>
+              <h2 className="font-display text-2xl font-bold">{flipped ? `${slot.name}, this one is yours` : 'Tap to reveal'}</h2>
+              <button type="button" onClick={() => setFlipped(true)} className="mx-auto mt-4 block w-60 [perspective:1000px]">
+                <motion.div animate={{ rotateY: flipped ? 180 : 0 }} transition={{ duration: 0.7 }} className="relative aspect-[4/5] [transform-style:preserve-3d]">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl bg-brand-plum [backface-visibility:hidden]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/brand/vintage-closet-logo.png" alt="" className="w-32 animate-pulse" />
+                    <span className="mt-3 text-xs font-bold uppercase tracking-[0.25em] text-brand-teal-bright">Tap</span>
+                  </div>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={postcard} alt="Your card" className="absolute inset-0 h-full w-full rounded-2xl object-cover shadow-xl [backface-visibility:hidden] [transform:rotateY(180deg)]" />
+                </motion.div>
+              </button>
+              {flipped ? (
+                <div className="mt-4 grid gap-2 text-left">
+                  <ShareStory cardPath={postcard} pagePath={`/events/${event.slug}`} text={`My Vintage Closet card 📮 ${DAY_LABEL[slot.day]} ${slot.time}`} fileName={`${event.slug}-${slot.id}-card`} compact onShared={markShared} />
+                  <p className="text-xs text-muted">This keeps popping up until you share it once.</p>
+                </div>
+              ) : null}
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }
