@@ -1,7 +1,7 @@
-import { createHash, timingSafeEqual } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
 import { generateListing } from '@/lib/ai-listing';
+import { importAuthorized as authorized, importReady as ready } from '@/lib/import-auth';
 import { CATEGORIES_BY_GENDER, PRODUCT_GENDERS, ProductGender } from '@/lib/product-categories';
 
 /*
@@ -24,23 +24,6 @@ export const maxDuration = 300;
 
 const BUCKET = 'product-images';
 const MAX_PHOTOS = 12;
-
-function authorized(request: NextRequest): boolean {
-  const key = process.env.VINTAGE_IMPORT_KEY;
-  const given = (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
-  if (!key || !given) return false;
-  const a = createHash('sha256').update(key).digest();
-  const b = createHash('sha256').update(given).digest();
-  return timingSafeEqual(a, b);
-}
-
-function ready(): boolean {
-  return Boolean(process.env.VINTAGE_IMPORT_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY);
-}
-
-export async function GET(request: NextRequest) {
-  return NextResponse.json({ ok: true, ready: ready(), authorized: ready() && authorized(request) });
-}
 
 interface Facts {
   category?: string;

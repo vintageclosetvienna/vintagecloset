@@ -3,6 +3,7 @@ import { Hero } from "@/components/landing/Hero";
 import { NewArrivals } from "@/components/landing/NewArrivals";
 import { CalloutBanner } from "@/components/landing/CalloutBanner";
 import { MediaCarousel } from "@/components/landing/MediaCarousel";
+import { LookbookDecks } from "@/components/landing/LookbookDecks";
 import { StoreStory } from "@/components/landing/StoreStory";
 import { CollectionHighlights } from "@/components/landing/CollectionHighlights";
 import { CapabilitiesStrip } from "@/components/landing/CapabilitiesStrip";
@@ -23,6 +24,7 @@ export default function Home() {
       <Hero />
       <NewArrivals limit={7} />
       <MediaCarousel />
+      <LookbookDecks />
       
       <StoreStory />
       <CapabilitiesStrip />

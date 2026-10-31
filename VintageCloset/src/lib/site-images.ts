@@ -338,3 +338,41 @@ export async function getCollectionHero(gender: 'women' | 'men' | 'unisex'): Pro
   // Fallback to Unsplash image
   return FALLBACK_HEROES[gender];
 }
+
+// ============================================
+// LOOKBOOK (model looks sent from the Rennstern app: one swipe card per look on the homepage photo wall)
+// ============================================
+
+export interface Look {
+  id: string;
+  title: string;
+  caption: string;
+  images: { url: string; position: string }[];
+}
+
+// Rows of section 'lookbook' are keyed look-<look>-<n>; one card per look, newest look first
+export async function getLookbook(): Promise<Look[]> {
+  if (!isSupabaseConfigured()) {
+    return [];
+  }
+  const { data, error } = await supabase
+    .from('site_images')
+    .select('*')
+    .eq('section', 'lookbook')
+    .eq('is_active', true)
+    .order('sort_order');
+  if (error || !data) {
+    return [];
+  }
+  const looks = new Map<string, Look & { created: string }>();
+  for (const row of data as DbSiteImage[]) {
+    const id = row.key.replace(/-\d+$/, '');
+    const look = looks.get(id) || { id, title: row.label, caption: row.description || '', images: [], created: row.created_at };
+    look.images.push({ url: row.url, position: row.object_position || 'center top' });
+    if (row.created_at > look.created) look.created = row.created_at;
+    looks.set(id, look);
+  }
+  return [...looks.values()]
+    .sort((a, b) => b.created.localeCompare(a.created))
+    .map(({ id, title, caption, images }) => ({ id, title, caption, images }));
+}
