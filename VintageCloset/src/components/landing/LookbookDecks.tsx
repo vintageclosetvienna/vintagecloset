@@ -80,6 +80,41 @@ function Deck({ look }: { look: Look }) {
   );
 }
 
+/* Below the decks: the looks' photos as a free editorial mosaic, mixed sizes like a magazine spread (his ask 31 Oct). */
+const TILE = [
+  'col-span-2 row-span-3', 'row-span-2', 'row-span-3', 'row-span-2',
+  'row-span-2', 'col-span-2 row-span-2', 'row-span-3', 'row-span-2',
+  'row-span-3', 'col-span-2 row-span-3',
+];
+
+function Mosaic({ looks }: { looks: Look[] }) {
+  // one photo from each look in turn, so the spread mixes the looks
+  const shots: { url: string; position: string; title: string }[] = [];
+  for (let k = 0; shots.length < TILE.length && looks.some((l) => l.images[k]); k++) {
+    looks.forEach((l) => l.images[k] && shots.length < TILE.length && shots.push({ ...l.images[k], title: l.title }));
+  }
+  if (shots.length < 4) return null;
+  return (
+    <div className="mt-10 md:mt-14 px-4 md:px-6 grid grid-cols-2 md:grid-cols-4 auto-rows-[110px] md:auto-rows-[150px] grid-flow-dense gap-2 md:gap-3">
+      {shots.map((s, k) => (
+        <div key={k} className={`relative overflow-hidden rounded-xl bg-gray-200 group ${TILE[k]}`}>
+          <SafeImage
+            src={s.url}
+            alt={s.title}
+            fill
+            sizes="(max-width: 768px) 50vw, 25vw"
+            className="object-cover transition-transform duration-700 group-hover:scale-105"
+            style={{ objectPosition: s.position }}
+          />
+          <span className="absolute bottom-2 left-3 text-[11px] uppercase tracking-[0.18em] text-white/90 opacity-0 group-hover:opacity-100 transition-opacity drop-shadow">
+            {s.title}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function LookbookDecks() {
   const [looks, setLooks] = useState<Look[]>([]);
 
@@ -100,6 +135,7 @@ export function LookbookDecks() {
           <Deck key={look.id} look={look} />
         ))}
       </div>
+      <Mosaic looks={looks} />
     </section>
   );
 }

@@ -22,7 +22,7 @@ export default function Home() {
     <div className="flex flex-col gap-0 md:gap-8 lg:gap-12 pb-12">
       <CalloutBanner />
       <Hero />
-      <NewArrivals limit={7} />
+      <NewArrivals limit={3} />
       <MediaCarousel />
       <LookbookDecks />
       

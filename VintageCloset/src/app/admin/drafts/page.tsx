@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { CheckCircle, Sparkle, Trash, Tray } from '@phosphor-icons/react';
 import { FormInput, FormSelect, FormTextarea } from '@/components/admin';
@@ -53,7 +53,12 @@ const toEdit = (d: DbProductDraft): Edit => ({
   era: d.era || '',
 });
 
-function DraftCard({ draft, onDone }: { draft: DbProductDraft; onDone: () => void }) {
+// accept all / discard all (his ask 31 Oct): the page sends one signal, every card in scope acts on its own edits
+interface Bulk { kind: 'publish' | 'discard'; group: string | null; n: number }
+
+const groupOf = (d: DbProductDraft) => d.category || 'Not sorted yet';
+
+function DraftCard({ draft, onDone, bulk, onBulk }: { draft: DbProductDraft; onDone: () => void; bulk: Bulk | null; onBulk: (r: 'done' | 'skipped') => void }) {
   const [edit, setEdit] = useState<Edit>(() => toEdit(draft));
   const [busy, setBusy] = useState<'' | 'publish' | 'ai' | 'discard'>('');
   const [error, setError] = useState<string | null>(null);
@@ -132,8 +137,8 @@ function DraftCard({ draft, onDone }: { draft: DbProductDraft; onDone: () => voi
     setBusy('');
   };
 
-  const discard = async () => {
-    if (!confirm('Discard this draft and its photos? The piece on your Mac stays as it is; you can send it again.')) return;
+  const discard = async (asked = false) => {
+    if (!asked && !confirm('Discard this draft and its photos? The piece on your Mac stays as it is; you can send it again.')) return;
     setBusy('discard'); setError(null);
     const { data: files } = await supabase.storage.from('product-images').list(draft.id);
     if (files?.length) await supabase.storage.from('product-images').remove(files.map((f) => `${draft.id}/${f.name}`));
@@ -141,6 +146,17 @@ function DraftCard({ draft, onDone }: { draft: DbProductDraft; onDone: () => voi
     if (e) { setError(`Could not discard: ${e.message}`); setBusy(''); return; }
     onDone();
   };
+
+  // the page's accept-all / discard-all: once per signal; a draft without price, size, gender or category is left for you
+  const seen = useRef(0);
+  useEffect(() => {
+    if (!bulk || bulk.n === seen.current || (bulk.group && bulk.group !== groupOf(draft))) return;
+    seen.current = bulk.n;
+    if (bulk.kind === 'discard') { discard(true).then(() => onBulk('done')); return; }
+    if (!valid) { onBulk('skipped'); return; }
+    publish().then(() => onBulk('done'));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bulk]);
 
   return (
     <div className="bg-white rounded-xl border border-hairline p-4 grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-5">
@@ -188,7 +204,7 @@ function DraftCard({ draft, onDone }: { draft: DbProductDraft; onDone: () => voi
           <Button variant="secondary" onClick={rewrite} disabled={!!busy} isLoading={busy === 'ai'} className="gap-2">
             <Sparkle size={16} weight="bold" /> Rewrite with AI
           </Button>
-          <Button variant="ghost" onClick={discard} disabled={!!busy} isLoading={busy === 'discard'} className="gap-2 text-red-600">
+          <Button variant="ghost" onClick={() => discard()} disabled={!!busy} isLoading={busy === 'discard'} className="gap-2 text-red-600">
             <Trash size={16} weight="bold" /> Discard
           </Button>
           {!valid && <span className="text-xs text-muted">Price, size, gender and category are needed to publish.</span>}
@@ -220,6 +236,33 @@ export default function DraftsPage() {
     return () => { alive = false; };
   }, [round]);
 
+  // grouped like the app's collections: one section per category, the biggest first, unsorted last
+  const groups = useMemo(() => {
+    const m = new Map<string, DbProductDraft[]>();
+    drafts.forEach((d) => m.set(groupOf(d), [...(m.get(groupOf(d)) || []), d]));
+    return [...m.entries()].sort((a, b) => (a[0] === 'Not sorted yet' ? 1 : 0) - (b[0] === 'Not sorted yet' ? 1 : 0) || b[1].length - a[1].length);
+  }, [drafts]);
+
+  const [bulk, setBulk] = useState<Bulk | null>(null);
+  const [note, setNote] = useState('');
+  const counts = useRef({ done: 0, skipped: 0 });
+  const runBulk = (kind: Bulk['kind'], group: string | null) => {
+    const n = group ? drafts.filter((d) => groupOf(d) === group).length : drafts.length;
+    const what = group ? `${n} ${group} draft${n === 1 ? '' : 's'}` : `all ${n} drafts`;
+    const ok = kind === 'publish'
+      ? confirm(`Publish ${what} to the shop? Drafts still missing a price, size, gender or category stay here.`)
+      : confirm(`Discard ${what} and their photos? The pieces on your Mac stay as they are; you can send them again.`);
+    if (!ok) return;
+    counts.current = { done: 0, skipped: 0 };
+    setNote('');
+    setBulk((b) => ({ kind, group, n: (b?.n || 0) + 1 }));
+  };
+  const tally = useCallback((r: 'done' | 'skipped') => {
+    counts.current[r] += 1;
+    const { done, skipped } = counts.current;
+    setNote(`${done} done${skipped ? ` · ${skipped} still need a price, size, gender or category` : ''}`);
+  }, []);
+
   // while the AI is still writing a draft's text, look again every 10 seconds
   const writing = drafts.some((d) => d.ai_status === 'pending');
   useEffect(() => {
@@ -247,9 +290,31 @@ export default function DraftsPage() {
         </div>
       )}
 
-      <div className="space-y-4">
-        {drafts.map((d) => (
-          <DraftCard key={d.id} draft={d} onDone={load} />
+      {drafts.length > 0 && (
+        <div className="mb-6 flex flex-wrap items-center gap-3">
+          <Button onClick={() => runBulk('publish', null)} className="gap-2"><CheckCircle size={18} /> Accept all ({drafts.length})</Button>
+          <Button variant="ghost" onClick={() => runBulk('discard', null)} className="gap-2 text-red-600"><Trash size={18} /> Discard all</Button>
+          {note && <span className="text-sm text-muted">{note}</span>}
+        </div>
+      )}
+
+      <div className="space-y-10">
+        {groups.map(([g, list]) => (
+          <section key={g}>
+            <div className="mb-3 flex flex-wrap items-baseline gap-3 border-b border-hairline pb-2">
+              <h2 className="text-lg font-display font-bold text-ink">{g}</h2>
+              <span className="text-sm text-muted">{list.length} piece{list.length === 1 ? '' : 's'}</span>
+              <span className="ml-auto flex gap-2">
+                <Button size="sm" variant="ghost" onClick={() => runBulk('publish', g)}>Accept {g}</Button>
+                <Button size="sm" variant="ghost" onClick={() => runBulk('discard', g)} className="text-red-600">Discard {g}</Button>
+              </span>
+            </div>
+            <div className="space-y-4">
+              {list.map((d) => (
+                <DraftCard key={d.id} draft={d} onDone={load} bulk={bulk} onBulk={tally} />
+              ))}
+            </div>
+          </section>
         ))}
       </div>
     </div>
