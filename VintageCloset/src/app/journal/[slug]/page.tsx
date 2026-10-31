@@ -173,15 +173,37 @@ export default function ArticlePage() {
                 );
               }
               
+              // the article's photos weave in after the paragraphs (31 Oct: they were stored but never shown), two at a time
+              const pics = article.images.slice(idx * 2, idx * 2 + 2);
               return (
                 <Reveal key={idx} delay={0.05 * idx}>
                   <p className="text-lg text-muted leading-relaxed">
                     {paragraph}
                   </p>
+                  {pics.length > 0 && (
+                    <div className={`mt-8 grid gap-3 ${pics.length === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                      {pics.map((src) => (
+                        <div key={src} className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-surface">
+                          <Image src={src} alt="" fill sizes="(max-width: 768px) 50vw, 400px" className="object-cover" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </Reveal>
               );
             })}
           </div>
+
+          {/* photos left after the last paragraph: a free mosaic */}
+          {article.images.length > Math.max(0, paragraphs.length - 1) * 2 && (
+            <div className="mt-10 grid grid-cols-2 md:grid-cols-3 auto-rows-[160px] md:auto-rows-[200px] grid-flow-dense gap-3">
+              {article.images.slice(Math.max(0, paragraphs.length - 1) * 2).map((src, k) => (
+                <div key={src} className={`relative rounded-2xl overflow-hidden bg-surface ${k % 5 === 0 ? 'row-span-2' : k % 5 === 3 ? 'col-span-2' : ''}`}>
+                  <Image src={src} alt="" fill sizes="(max-width: 768px) 50vw, 33vw" className="object-cover" />
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Tags */}
           <Reveal className="mt-12 pt-8 border-t border-hairline">
