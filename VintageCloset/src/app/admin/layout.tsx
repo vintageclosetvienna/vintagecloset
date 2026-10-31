@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { AdminSidebar, AdminMobileHeader } from '@/components/admin/AdminSidebar';
 import { AuthGuard } from '@/components/admin/AuthGuard';
+import { DraftsNotice } from '@/components/admin/DraftsNotice';
 import { AuthProvider } from '@/lib/auth';
 
 export default function AdminLayout({
@@ -43,6 +44,7 @@ export default function AdminLayout({
               {children}
             </div>
           </main>
+          <DraftsNotice />
         </div>
       </AuthGuard>
     </AuthProvider>

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { supabase, isSupabaseConfigured, DbProductDraft } from '@/lib/supabase';
 import { authFetch } from '@/lib/auth-fetch';
 import { CATEGORIES_BY_GENDER, ProductGender, AiProductDetails } from '@/lib/product-categories';
+import { draftsSeenAt, markDraftsSeen, sentAt } from '@/lib/drafts-seen';
 
 /*
  * Drafts: pieces sent from the Rennstern app (Vintage clothes pipeline → Publish). Photos are already graded and framed
@@ -58,7 +59,7 @@ interface Bulk { kind: 'publish' | 'discard'; group: string | null; n: number }
 
 const groupOf = (d: DbProductDraft) => d.category || 'Not sorted yet';
 
-function DraftCard({ draft, onDone, bulk, onBulk }: { draft: DbProductDraft; onDone: () => void; bulk: Bulk | null; onBulk: (r: 'done' | 'skipped') => void }) {
+function DraftCard({ draft, onDone, bulk, onBulk, isNew }: { draft: DbProductDraft; onDone: () => void; bulk: Bulk | null; onBulk: (r: 'done' | 'skipped') => void; isNew?: boolean }) {
   const [edit, setEdit] = useState<Edit>(() => toEdit(draft));
   const [busy, setBusy] = useState<'' | 'publish' | 'ai' | 'discard'>('');
   const [error, setError] = useState<string | null>(null);
@@ -204,7 +205,8 @@ function DraftCard({ draft, onDone, bulk, onBulk }: { draft: DbProductDraft; onD
           {draft.ai_status === 'pending' && <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">AI is writing the text…</span>}
           {draft.ai_status === 'failed' && <span className="px-2 py-0.5 rounded-full bg-red-50 text-red-600" title={draft.ai_error || ''}>AI text failed: write it or press Rewrite</span>}
           {draft.brand && <span className="px-2 py-0.5 rounded-full bg-surface text-muted">Label: {draft.brand}{draft.size ? ` · ${draft.size}` : ''}</span>}
-          <span className="text-muted">sent {new Date(draft.created_at).toLocaleString('de-AT')}</span>
+          {isNew && <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-medium">{draft.updated_at && sentAt(draft) - new Date(draft.created_at).getTime() > 60000 ? 'updated from the Mac' : 'new'}</span>}
+          <span className="text-muted">sent {new Date(draft.updated_at || draft.created_at).toLocaleString('de-AT')}</span>
         </div>
 
         <FormInput label="Title" value={edit.title} onChange={(e) => set('title', e.target.value)} placeholder="Vintage 90s Levi's Jeans Blue" />
@@ -258,6 +260,16 @@ export default function DraftsPage() {
     })();
     return () => { alive = false; };
   }, [round]);
+
+  // kept in sync with the Mac (31 Oct, his ask): the list looks again every 30 seconds and when you come back to the tab;
+  // what was sent since your last visit is marked new, and this visit counts as seen
+  const [seenBefore] = useState(() => (typeof window === 'undefined' ? 0 : draftsSeenAt()));
+  useEffect(() => {
+    const t = setInterval(load, 30000);
+    window.addEventListener('focus', load);
+    return () => { clearInterval(t); window.removeEventListener('focus', load); };
+  }, [load]);
+  useEffect(() => { if (drafts.length) markDraftsSeen(Math.max(...drafts.map(sentAt))); }, [drafts]);
 
   // grouped like the app's collections: one section per category, the biggest first, unsorted last
   const groups = useMemo(() => {
@@ -334,7 +346,7 @@ export default function DraftsPage() {
             </div>
             <div className="space-y-4">
               {list.map((d) => (
-                <DraftCard key={d.id} draft={d} onDone={load} bulk={bulk} onBulk={tally} />
+                <DraftCard key={d.id} draft={d} onDone={load} bulk={bulk} onBulk={tally} isNew={sentAt(d) > seenBefore} />
               ))}
             </div>
           </section>
