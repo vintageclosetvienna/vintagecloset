@@ -63,11 +63,13 @@ function EventCard({ event, idx }: { event: Event; idx: number }) {
               {/* Status Badge */}
               <div className="absolute top-4 left-4">
                 <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md shadow-sm ${
-                  event.status === 'Upcoming' 
+                  event.status === 'Now Open'
+                    ? 'bg-brand-teal-bright text-brand-plum'
+                    : event.status === 'Upcoming' 
                     ? 'bg-white/95 backdrop-blur-sm text-accent-start' 
                     : 'bg-ink/80 backdrop-blur-sm text-white'
                 }`}>
-                  <CalendarCheck weight="bold" size={12} />
+                  {event.status === 'Now Open' ? <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" /> : <CalendarCheck weight="bold" size={12} />}
                   {event.status}
                 </span>
               </div>

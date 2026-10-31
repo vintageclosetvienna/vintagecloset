@@ -70,11 +70,15 @@ export default function EventWeekendPage() {
           </Link>
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-brand-teal-bright px-3 py-1 text-xs font-bold uppercase tracking-wider text-brand-plum">
-              Pop up · Bandgasse 43
+              {event.series || /1070|bandgasse/i.test(event.location) ? 'Pop up · Bandgasse 43' : 'Shop · Spitalgasse 13'}
             </span>
             {live ? (
               <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-bold uppercase tracking-wider text-brand-plum">
                 <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" /> Live this weekend
+              </span>
+            ) : event.status === 'Now Open' ? (
+              <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-bold uppercase tracking-wider text-brand-plum">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" /> Now open
               </span>
             ) : event.status === 'Past' ? (
               <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold uppercase tracking-wider text-white">Recap</span>

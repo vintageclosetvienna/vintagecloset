@@ -1,5 +1,5 @@
 import { supabase, isSupabaseConfigured } from './supabase';
-import { parseLineup, type LineupSlot } from './popup';
+import { parseLineup, viennaToday, type LineupSlot } from './popup';
 
 // Frontend Event interface
 export interface Event {
@@ -11,7 +11,7 @@ export interface Event {
   time: string;
   location: string;
   image: string;
-  status: 'Upcoming' | 'Coming Soon' | 'Past';
+  status: 'Upcoming' | 'Coming Soon' | 'Now Open' | 'Past';
   spotsLeft: number | null;
   isPublished?: boolean;
   endDate: string | null;
@@ -32,7 +32,7 @@ export interface DbEvent {
   time: string | null;
   location: string;
   image: string | null;
-  status: 'Upcoming' | 'Coming Soon' | 'Past';
+  status: 'Upcoming' | 'Coming Soon' | 'Now Open' | 'Past';
   spots_left: number | null;
   is_published: boolean;
   created_at: string;
@@ -45,8 +45,18 @@ export interface DbEvent {
   journal_slug?: string | null;
 }
 
+/* "Now Open" (31 Oct): an event that has started and isn't marked Past or over yet (a pop up season, a hub that stays open)
+   shows as running instead of "Upcoming" or "Past". Stored statuses stay Upcoming / Coming Soon / Past. */
+function displayStatus(db: DbEvent): Event['status'] {
+  if (db.status === 'Past') return 'Past';
+  const today = viennaToday();
+  if (db.date <= today && (!db.end_date || db.end_date >= today)) return 'Now Open';
+  if (db.end_date && db.end_date < today) return 'Past';
+  return db.status;
+}
+
 // Convert database event to frontend event
-function dbToEvent(db: DbEvent): Event {
+function dbToEvent(db: DbEvent, raw = false): Event {
   return {
     id: db.id,
     slug: db.slug,
@@ -56,7 +66,7 @@ function dbToEvent(db: DbEvent): Event {
     time: db.time || '',
     location: db.location,
     image: db.image || '',
-    status: db.status,
+    status: raw ? db.status : displayStatus(db),
     spotsLeft: db.spots_left,
     isPublished: db.is_published,
     endDate: db.end_date ?? null,
@@ -91,7 +101,7 @@ export async function getEvents(): Promise<Event[]> {
     return [];
   }
 
-  return (data as DbEvent[]).map(dbToEvent);
+  return (data as DbEvent[]).map((d) => dbToEvent(d));
 }
 
 /**
@@ -112,7 +122,7 @@ export async function getAllEvents(): Promise<Event[]> {
     return [];
   }
 
-  return (data as DbEvent[]).map(dbToEvent);
+  return (data as DbEvent[]).map((d) => dbToEvent(d, true)); // admin edits the stored status
 }
 
 /**
@@ -182,7 +192,7 @@ export async function getUpcomingEvents(): Promise<Event[]> {
     return [];
   }
 
-  return (data as DbEvent[]).map(dbToEvent);
+  return (data as DbEvent[]).map((d) => dbToEvent(d));
 }
 
 /**
@@ -235,7 +245,7 @@ export async function getPastEvents(): Promise<Event[]> {
     return [];
   }
 
-  return (data as DbEvent[]).map(dbToEvent);
+  return (data as DbEvent[]).map((d) => dbToEvent(d));
 }
 
 // ============================================
@@ -284,6 +294,7 @@ export function getShortDate(dateString: string): { day: string; month: string }
 export const statusColors: Record<string, string> = {
   'Upcoming': 'bg-green-50 text-green-700',
   'Coming Soon': 'bg-amber-50 text-amber-700',
+  'Now Open': 'bg-teal-50 text-teal-700',
   'Past': 'bg-gray-50 text-gray-600',
 };
 

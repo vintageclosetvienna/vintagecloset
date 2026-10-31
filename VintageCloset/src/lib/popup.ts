@@ -77,7 +77,9 @@ export function viennaToday(): string {
 /** Live = today is the Saturday or Sunday of this weekend. */
 export function isLiveWeekend(date: string, endDate?: string | null): boolean {
   const today = viennaToday();
-  return today >= date && today <= (endDate || date);
+  // a season (pop up open for weeks) is "Now open", not a live weekend
+  const days = (new Date(`${endDate || date}T12:00:00`).getTime() - new Date(`${date}T12:00:00`).getTime()) / 86400000;
+  return days <= 3 && today >= date && today <= (endDate || date);
 }
 
 export function storyCardPath(slug: string, slotId?: string): string {

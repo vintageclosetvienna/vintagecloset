@@ -72,7 +72,7 @@ export default function NewEventPage() {
           time: formData.time || null,
           location: formData.location,
           image,
-          status: formData.status as 'Upcoming' | 'Coming Soon' | 'Past',
+          status: formData.status as 'Upcoming' | 'Coming Soon' | 'Now Open' | 'Past',
           spots_left: spotsLeft,
           is_published: true,
         };

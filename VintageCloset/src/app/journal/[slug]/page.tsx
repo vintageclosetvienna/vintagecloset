@@ -12,6 +12,7 @@ import {
   getRelatedArticles,
   type JournalArticle,
 } from '@/lib/journal-data';
+import { JournalBlock, parseJournalBlock } from '@/components/journal/JournalBlock';
 
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
@@ -157,13 +158,18 @@ export default function ArticlePage() {
 
           {/* Body paragraphs */}
           <div className="space-y-6">
-            {paragraphs.slice(1).map((paragraph, idx) => {
+            {paragraphs.slice(1).map((paragraph, i) => {
+              // a token paragraph is a block (video, party pics, fashion, shop the look) between the reading
+              const block = parseJournalBlock(paragraph);
+              if (block) return <Reveal key={i} delay={0.05}><JournalBlock block={block} /></Reveal>;
+              // photos keep pairing with text paragraphs only
+              const idx = paragraphs.slice(1, i + 1).filter((p) => !parseJournalBlock(p)).length;
               // Check if it's a quote (starts with ")
               const isQuote = paragraph.startsWith('"') && paragraph.endsWith('"');
               
               if (isQuote) {
                 return (
-                  <Reveal key={idx} delay={0.1}>
+                  <Reveal key={`p${i}`} delay={0.1}>
                     <blockquote className="my-10 border-l-4 border-accent-start pl-6 py-2">
                       <p className="text-2xl font-display font-bold italic text-ink">
                         {paragraph}
@@ -176,7 +182,7 @@ export default function ArticlePage() {
               // the article's photos weave in after the paragraphs (31 Oct: they were stored but never shown), two at a time
               const pics = article.images.slice(idx * 2, idx * 2 + 2);
               return (
-                <Reveal key={idx} delay={0.05 * idx}>
+                <Reveal key={`p${i}`} delay={0.05 * idx}>
                   <p className="text-lg text-muted leading-relaxed">
                     {paragraph}
                   </p>
@@ -195,9 +201,9 @@ export default function ArticlePage() {
           </div>
 
           {/* photos left after the last paragraph: a free mosaic */}
-          {article.images.length > Math.max(0, paragraphs.length - 1) * 2 && (
+          {article.images.length > Math.max(0, paragraphs.filter((p) => !parseJournalBlock(p)).length - 1) * 2 && (
             <div className="mt-10 grid grid-cols-2 md:grid-cols-3 auto-rows-[160px] md:auto-rows-[200px] grid-flow-dense gap-3">
-              {article.images.slice(Math.max(0, paragraphs.length - 1) * 2).map((src, k) => (
+              {article.images.slice(Math.max(0, paragraphs.filter((p) => !parseJournalBlock(p)).length - 1) * 2).map((src, k) => (
                 <div key={src} className={`relative rounded-2xl overflow-hidden bg-surface ${k % 5 === 0 ? 'row-span-2' : k % 5 === 3 ? 'col-span-2' : ''}`}>
                   <Image src={src} alt="" fill sizes="(max-width: 768px) 50vw, 33vw" className="object-cover" />
                 </div>

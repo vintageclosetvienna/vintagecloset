@@ -89,7 +89,7 @@ export interface DbEvent {
   time: string | null;
   location: string;
   image: string | null;
-  status: 'Upcoming' | 'Coming Soon' | 'Past';
+  status: 'Upcoming' | 'Coming Soon' | 'Now Open' | 'Past';
   spots_left: number | null;
   is_published: boolean;
   created_at: string;

@@ -190,3 +190,27 @@ export async function getRecentProductsCount(days: number = 7): Promise<number> 
 
   return count || 0;
 }
+
+/**
+ * Get several available products by slug, in the order asked (journal "shop the look" strips).
+ * Sold or draft pieces drop out by themselves.
+ */
+export async function getProductsBySlugs(slugs: string[]): Promise<Product[]> {
+  if (!isSupabaseConfigured() || slugs.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .in('slug', slugs)
+    .eq('is_sold', false);
+
+  if (error) {
+    console.error('Error fetching products by slug:', error);
+    return [];
+  }
+
+  const bySlug = new Map((data as (DbProduct & { is_draft?: boolean })[]).filter((p) => !p.is_draft).map((p) => [p.slug, dbToProduct(p)]));
+  return slugs.map((s) => bySlug.get(s)).filter((p): p is Product => Boolean(p));
+}
