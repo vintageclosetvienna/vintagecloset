@@ -4,6 +4,7 @@ import { NewArrivals } from "@/components/landing/NewArrivals";
 import { CalloutBanner } from "@/components/landing/CalloutBanner";
 import { MediaCarousel } from "@/components/landing/MediaCarousel";
 import { LookbookDecks } from "@/components/landing/LookbookDecks";
+import { DiscoverDesigners } from "@/components/landing/DiscoverDesigners";
 import { StoreStory } from "@/components/landing/StoreStory";
 import { CollectionHighlights } from "@/components/landing/CollectionHighlights";
 import { CapabilitiesStrip } from "@/components/landing/CapabilitiesStrip";
@@ -25,6 +26,7 @@ export default function Home() {
       <NewArrivals limit={3} />
       <MediaCarousel />
       <LookbookDecks />
+      <DiscoverDesigners />
       
       <StoreStory />
       <CapabilitiesStrip />

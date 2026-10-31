@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
 import { generateListing } from '@/lib/ai-listing';
 import { importAuthorized as authorized, importReady as ready } from '@/lib/import-auth';
+import { getDesigners } from '@/lib/designers';
 import { CATEGORIES_BY_GENDER, PRODUCT_GENDERS, ProductGender } from '@/lib/product-categories';
 
 /*
@@ -123,6 +124,8 @@ export async function POST(request: NextRequest) {
       facts.brand ? `Brand on the label: ${facts.brand}.` : '',
       facts.size ? `Size on the label: ${facts.size}.` : '',
       category ? `The app sorted it as ${gender} ${category}.` : '',
+      // the shop's partner collectives, brands and designers: their cards on the homepage light up from the title
+      `Partner labels sold here: ${(await getDesigners()).map((d) => d.name).join(', ')}. If the label, tag or logo shows one of them, put that exact name in the title.`,
     ].filter(Boolean).join(' ');
     let update: Record<string, unknown>;
     try {
