@@ -10,6 +10,8 @@ import { useLoad, must } from '@/lib/staff/useLoad';
 import { db, euro, Product } from '@/lib/staff/db';
 import { Btn, Empty, inputCls, Pill, Spinner, Tip, useToast } from '@/components/staff/ui';
 import { cn } from '@/lib/utils';
+import type { DbProductDraft } from '@/lib/supabase';
+import { PipelineDraftCard } from '@/components/staff/PipelineDrafts';
 
 type Tab = 'drafts' | 'live' | 'sold';
 const TABS: { id: Tab; key: StaffKey; emoji: string }[] = [
@@ -29,15 +31,30 @@ function ProductsList() {
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const { data, loading, reload } = useLoad(() => db.from('products').select('*').order('created_at', { ascending: false }).then(must<Product[]>));
+  // Drafts from the Vintage studio pipeline (Rennstern app); a missing table just means none
+  const { data: studioDraftRows, reload: reloadStudio } = useLoad(() =>
+    db.from('product_drafts').select('*').order('created_at', { ascending: false }).then((r) => (r.error ? [] : ((r.data ?? []) as DbProductDraft[])))
+  );
+  const studioDrafts = useMemo(() => {
+    const live = new Set((data ?? []).map((p) => p.id));
+    const needle = q.trim().toLowerCase();
+    return (studioDraftRows ?? [])
+      .filter((d) => !live.has(d.id))
+      .filter((d) => !needle || `${d.title} ${d.category} ${d.size} ${d.era ?? ''}`.toLowerCase().includes(needle));
+  }, [studioDraftRows, data, q]);
+  const reloadAll = () => {
+    reload();
+    reloadStudio();
+  };
 
   const counts = useMemo(() => {
     const all = data ?? [];
     return {
-      drafts: all.filter((p) => p.is_draft).length,
+      drafts: all.filter((p) => p.is_draft).length + studioDrafts.length,
       live: all.filter((p) => !p.is_draft && !p.is_sold).length,
       sold: all.filter((p) => !p.is_draft && p.is_sold).length,
     };
-  }, [data]);
+  }, [data, studioDrafts]);
 
   const list = useMemo(() => {
     const all = data ?? [];
@@ -99,7 +116,7 @@ function ProductsList() {
         <div className="flex justify-center py-16">
           <Spinner />
         </div>
-      ) : list.length === 0 ? (
+      ) : list.length === 0 && !(tab === 'drafts' && studioDrafts.length) ? (
         <Empty
           emoji={tab === 'drafts' ? '📝' : tab === 'sold' ? '💸' : '🧥'}
           text={t('noItems')}
@@ -111,6 +128,7 @@ function ProductsList() {
         />
       ) : (
         <ul className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
+          {tab === 'drafts' && studioDrafts.map((d) => <PipelineDraftCard key={d.id} draft={d} onDone={reloadAll} />)}
           {list.map((p) => (
             <li key={p.id} className="group flex flex-col overflow-hidden rounded-2xl border border-hairline bg-white">
               <div className="relative aspect-[4/5] bg-black/5">
@@ -137,7 +155,7 @@ function ProductsList() {
                   </Link>
                   {p.is_draft ? (
                     <Tip text={t('publishTip')}>
-                      <button disabled={busyId === p.id} onClick={() => update(p, { is_draft: false }, t('savedPublished'))} className="rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700">
+                      <button disabled={busyId === p.id} onClick={() => (p.price > 0 ? update(p, { is_draft: false }, t('savedPublished')) : (toast(t('priceMissing')), router.push(`/staff/products/new?id=${p.id}`)))} className="rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700">
                         🚀 {t('publish')}
                       </button>
                     </Tip>

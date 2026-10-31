@@ -1,8 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useDay } from './workday';
 
-/** Loads data once (and again after reload()), without setting state synchronously inside the effect */
+/** Loads data once (and again after reload() or when a new working day starts), without setting state synchronously inside the effect */
 export function useLoad<T>(loader: () => PromiseLike<T>, deps: unknown[] = []) {
   const [state, setState] = useState<{ data: T | null; error: string | null; loading: boolean }>({
     data: null,
@@ -10,6 +11,7 @@ export function useLoad<T>(loader: () => PromiseLike<T>, deps: unknown[] = []) {
     loading: true,
   });
   const [version, setVersion] = useState(0);
+  const day = useDay();
 
   useEffect(() => {
     let cancelled = false;
@@ -24,7 +26,7 @@ export function useLoad<T>(loader: () => PromiseLike<T>, deps: unknown[] = []) {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [version, ...deps]);
+  }, [version, day, ...deps]);
 
   const reload = useCallback(() => setVersion((v) => v + 1), []);
   return { ...state, reload };

@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState, ReactNode } from 'react';
+import { useEffect, useRef, useState, ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useStaff } from '@/lib/staff/session';
 import { useT, StaffKey } from '@/lib/staff/i18n';
+import { useWorkday } from '@/lib/staff/workday';
 import { Btn, Field, inputCls, Modal, Pill, Spinner, Tip, useToast } from './ui';
 import { cn } from '@/lib/utils';
 
@@ -77,9 +78,11 @@ function ManagerUnlock({ open, onClose }: { open: boolean; onClose: () => void }
   );
 }
 
+// Asked on every new working day; who worked last time continues with one tap
 function WhoWorks() {
-  const { t } = useT();
-  const { setWorker } = useStaff();
+  const { t, lang } = useT();
+  const { setWorker, lastWorker } = useStaff();
+  const { freshDay } = useWorkday();
   const [name, setName] = useState('');
   return (
     <div className="flex min-h-dvh items-center justify-center bg-surface px-4">
@@ -93,8 +96,16 @@ function WhoWorks() {
         <div className="text-5xl" aria-hidden>
           🙋
         </div>
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-plum">
+          {freshDay ? t('newDayTitle') : new Date().toLocaleDateString(lang === 'ar' ? 'ar' : 'de-AT', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Vienna' })}
+        </p>
         <h1 className="font-display text-2xl font-bold">{t('whoWorks')}</h1>
         <p className="text-sm text-muted">{t('whoWorksTip')}</p>
+        {lastWorker && (
+          <Btn type="button" variant="soft" className="w-full" onClick={() => setWorker(lastWorker)}>
+            🙋 {t('continueAs')} {lastWorker}
+          </Btn>
+        )}
         <input id="worker-name" className={cn(inputCls, 'text-center text-base')} placeholder={t('yourName')} value={name} onChange={(e) => setName(e.target.value)} autoFocus />
         <Btn type="submit" variant="primary" className="w-full" disabled={!name.trim()}>
           {t('letsGo')} →
@@ -113,6 +124,14 @@ export function StaffShell({ children }: { children: ReactNode }) {
   const now = useNow(30_000);
   const [mgrOpen, setMgrOpen] = useState(false);
   const isLogin = pathname === '/staff/login';
+  const { day } = useWorkday();
+  // A new working day while the app is open: say so once; every page reloads by itself (useLoad follows the day)
+  const shownDay = useRef(day);
+  useEffect(() => {
+    if (day === shownDay.current) return;
+    shownDay.current = day;
+    toast(`🌅 ${t('newDayTitle')}`);
+  }, [day, toast, t]);
 
   useEffect(() => {
     if (ready && !isLogin && (!session || !profile)) router.replace('/staff/login');
@@ -134,7 +153,7 @@ export function StaffShell({ children }: { children: ReactNode }) {
   const clock = now.toLocaleTimeString(dir === 'rtl' ? 'ar' : 'de-AT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Vienna' });
 
   return (
-    <div dir={dir} className="min-h-dvh bg-surface pb-24 lg:pb-0 lg:ps-60">
+    <div dir={dir} className="min-h-dvh overflow-x-clip bg-surface pb-24 lg:pb-0 lg:ps-60">
       {/* Side nav (desktop) */}
       <aside className="fixed inset-y-0 start-0 z-40 hidden w-60 flex-col border-e border-hairline bg-white px-4 py-6 lg:flex">
         <Link href="/staff" className="mb-8 block px-2">

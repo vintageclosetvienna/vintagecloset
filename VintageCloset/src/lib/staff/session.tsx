@@ -4,8 +4,11 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, Re
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { db, StaffProfile, Shift } from './db';
+import { useDay } from './workday';
 
 const WORKER_KEY = 'vc-staff-worker';
+// The day the name was given: each new working day asks again who is working
+const WORKER_DAY_KEY = 'vc-staff-worker-day';
 const MANAGER_IDLE_MS = 10 * 60 * 1000;
 
 interface StaffSessionValue {
@@ -14,6 +17,8 @@ interface StaffSessionValue {
   profile: StaffProfile | null;
   isManager: boolean;
   worker: string;
+  /** Who worked last time, offered as a one-tap choice on a new day */
+  lastWorker: string;
   setWorker: (name: string) => void;
   shift: Shift | null;
   startShift: () => Promise<void>;
@@ -26,9 +31,18 @@ interface StaffSessionValue {
 
 const Ctx = createContext<StaffSessionValue | null>(null);
 
-function readWorker(): string {
+function readLastWorker(): string {
   try {
     return window.localStorage.getItem(WORKER_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+/** The name, only if it was given on this working day */
+function readWorker(day: string): string {
+  try {
+    return window.localStorage.getItem(WORKER_DAY_KEY) === day ? readLastWorker() : '';
   } catch {
     return '';
   }
@@ -50,8 +64,10 @@ async function fetchProfile(): Promise<{ profile: StaffProfile | null; failed: b
   return { profile: null, failed: true };
 }
 
-async function loadOpenShift(worker: string): Promise<Shift | null> {
-  let query = db.from('staff_shifts').select('*').is('ended_at', null).order('started_at', { ascending: false }).limit(1);
+/** The running shift of this working day; a shift left open on an earlier day does not carry over */
+async function loadOpenShift(worker: string, day: string): Promise<Shift | null> {
+  const startOfDay = new Date(`${day}T00:00:00`).toISOString();
+  let query = db.from('staff_shifts').select('*').is('ended_at', null).gte('started_at', startOfDay).order('started_at', { ascending: false }).limit(1);
   if (worker) query = query.eq('worker_name', worker);
   const { data } = await query;
   return (data?.[0] as Shift) ?? null;
@@ -61,7 +77,15 @@ export function StaffSessionProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<StaffProfile | null>(null);
-  const [worker, setWorkerState] = useState<string>(readWorker);
+  const day = useDay();
+  const [worker, setWorkerState] = useState<string>(() => readWorker(day));
+  const [lastWorker, setLastWorker] = useState<string>(readLastWorker);
+  // A new working day while the app is open: ask again who is working
+  const [workerDay, setWorkerDay] = useState(day);
+  if (workerDay !== day) {
+    setWorkerDay(day);
+    setWorkerState(readWorker(day));
+  }
   const [shift, setShift] = useState<Shift | null>(null);
   // The team session saved while the manager is unlocked, so locking returns to it without a new login
   const savedTeamSession = useRef<{ access_token: string; refresh_token: string } | null>(null);
@@ -101,25 +125,27 @@ export function StaffSessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!profile) return;
     let cancelled = false;
-    loadOpenShift(worker).then((s) => {
+    loadOpenShift(worker, day).then((s) => {
       if (!cancelled) setShift(s);
     });
     return () => {
       cancelled = true;
     };
-  }, [profile, worker]);
+  }, [profile, worker, day]);
 
   const isManager = profile?.role === 'owner' || profile?.role === 'manager';
 
   const setWorker = useCallback((name: string) => {
     const clean = name.trim().slice(0, 40);
     setWorkerState(clean);
+    if (clean) setLastWorker(clean);
     try {
-      window.localStorage.setItem(WORKER_KEY, clean);
+      if (clean) window.localStorage.setItem(WORKER_KEY, clean);
+      window.localStorage.setItem(WORKER_DAY_KEY, clean ? day : '');
     } catch {
       /* storage blocked */
     }
-  }, []);
+  }, [day]);
 
   const startShift = useCallback(async () => {
     const { data, error } = await db
@@ -205,6 +231,7 @@ export function StaffSessionProvider({ children }: { children: ReactNode }) {
         profile,
         isManager,
         worker,
+        lastWorker,
         setWorker,
         shift,
         startShift,

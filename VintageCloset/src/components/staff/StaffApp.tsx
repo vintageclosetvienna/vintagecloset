@@ -3,6 +3,7 @@
 import { ReactNode, useSyncExternalStore } from 'react';
 import { StaffI18nProvider } from '@/lib/staff/i18n';
 import { StaffSessionProvider } from '@/lib/staff/session';
+import { WorkdayProvider } from '@/lib/staff/workday';
 import { StaffShell } from './Shell';
 import { Spinner, ToastProvider } from './ui';
 import { VintageOpening } from './VintageOpening';
@@ -21,12 +22,14 @@ export function StaffApp({ children }: { children: ReactNode }) {
   }
   return (
     <StaffI18nProvider>
+      <WorkdayProvider>
       <StaffSessionProvider>
         <ToastProvider>
           <StaffShell>{children}</StaffShell>
           <VintageOpening />
         </ToastProvider>
       </StaffSessionProvider>
+      </WorkdayProvider>
     </StaffI18nProvider>
   );
 }

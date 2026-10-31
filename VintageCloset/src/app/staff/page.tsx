@@ -9,6 +9,8 @@ import { db, viennaToday, DailyCheck, EventRow, Note } from '@/lib/staff/db';
 import { Btn, Card, CardTitle, Modal, Pill, Ring, Spinner, Tip, inputCls, useToast } from '@/components/staff/ui';
 import { DayPlan, DEFAULT_DAY_PLAN, LOCKED_STEPS, MAX_CUSTOM_TASKS, customKey, loadDayPlan, saveDayPlan } from '@/lib/staff/day-plan';
 import { cn } from '@/lib/utils';
+import { useWorkday } from '@/lib/staff/workday';
+import { TeamMedia, isVideo, loadTeamMedia, mediaSeenAt } from '@/lib/staff/media';
 
 interface TodayData {
   toShip: number;
@@ -26,6 +28,8 @@ interface TodayData {
   pinned: Note[];
   plan: DayPlan;
   planReady: boolean;
+  studioDrafts: number;
+  media: TeamMedia[];
 }
 
 async function loadToday(): Promise<TodayData> {
@@ -55,12 +59,38 @@ async function loadToday(): Promise<TodayData> {
     // The day plan; a missing table (not set up yet) falls back to the default plan
     db.from('staff_settings').select('key').eq('key', 'day_plan').then((r) => !r.error, () => false),
   ]);
+  // Drafts from the studio pipeline that are not live yet, and Sobhi's newest media (both optional)
+  const [studioDraftRows, liveIds, media] = await Promise.all([
+    db.from('product_drafts').select('id').then((r) => (r.error ? [] : ((r.data ?? []) as { id: string }[])), () => []),
+    db.from('products').select('id').eq('is_draft', false).gte('created_at', new Date(Date.now() - 30 * 86400_000).toISOString()).then((r) => new Set(((r.data ?? []) as { id: string }[]).map((x) => x.id)), () => new Set<string>()),
+    loadTeamMedia(12).then((r) => r.items, () => [] as TeamMedia[]),
+  ]);
+  const studioDrafts = studioDraftRows.filter((d) => !liveIds.has(d.id)).length;
   const plan = planRow ? await loadDayPlan() : DEFAULT_DAY_PLAN;
-  return { toShip, pendingRecent, paidNew, pickups, studioNew, studioDone, drafts, createdToday, notesToday, shiftToday: shiftsToday > 0, checks, events, pinned, plan, planReady: planRow };
+  return { toShip, pendingRecent, paidNew, pickups, studioNew, studioDone, drafts, createdToday, notesToday, shiftToday: shiftsToday > 0, checks, events, pinned, plan, planReady: planRow, studioDrafts, media };
+}
+
+type Phase = 'start' | 'morning' | 'midday' | 'afternoon' | 'evening' | 'anytime';
+const PHASE_LABEL: Record<Phase, StaffKey> = {
+  start: 'phaseStart',
+  morning: 'phaseMorning',
+  midday: 'phaseMidday',
+  afternoon: 'phaseAfternoon',
+  evening: 'phaseEvening',
+  anytime: 'phaseAnytime',
+};
+
+/** Where in the day we are now (Vienna time) */
+function phaseNow(hour: number): Phase {
+  if (hour < 11) return 'morning';
+  if (hour < 14) return 'midday';
+  if (hour < 18) return 'afternoon';
+  return 'evening';
 }
 
 interface Step {
   key: string;
+  phase: Phase;
   emoji: string;
   title: StaffKey | string;
   tip: StaffKey | string;
@@ -75,6 +105,7 @@ interface Step {
 export default function TodayPage() {
   const { t, lang } = useT();
   const { worker, shift, startShift, isManager } = useStaff();
+  const { freshDay, dismissFresh } = useWorkday();
   const toast = useToast();
   const { data, loading, reload } = useLoad(loadToday);
   const [busyKey, setBusyKey] = useState('');
@@ -83,7 +114,6 @@ export default function TodayPage() {
   const [undoChecks, setUndoChecks] = useState<{ key: string; done_by: string | null }[] | null>(null);
   const label = (s: Step) => (s.custom ? s.title : t(s.title as StaffKey));
   const plan = data?.plan ?? DEFAULT_DAY_PLAN;
-  const goal = plan.goal;
   const hour = Number(new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hour12: false, timeZone: 'Europe/Vienna' }).format(new Date()));
   const greeting = hour < 11 ? t('goodMorning') : hour < 18 ? t('goodDay') : t('goodEvening');
   const motivation = useMemo(() => {
@@ -132,20 +162,23 @@ export default function TodayPage() {
     return () => window.clearTimeout(timer);
   }, [undoChecks]);
 
+  // Today's timeline: from opening the shop to the hand-over note. Ticks live per day (daily_checks.day), so every
+  // working day starts empty.
+  const draftsOpen = data ? data.drafts + data.studioDrafts : 0;
+  const newMedia = data ? data.media.filter((m) => new Date(m.created_at).getTime() > mediaSeenAt()).length : 0;
   const steps: Step[] = data
     ? [
-        { key: 'shift', emoji: '⏱️', title: 'stepShift', tip: 'stepShiftTip', done: !!shift || data.shiftToday, action: shift ? undefined : async () => { await startShift(); reload(); } },
-        { key: 'shop-check', emoji: '🔍', title: 'stepShopCheck', tip: 'stepShopCheckTip', done: checked('shop-check'), manual: true, href: '/' },
-        { key: 'orders-checked', emoji: '💳', title: 'stepOrders', tip: 'stepOrdersTip', done: checked('orders-checked'), manual: true, href: '/staff/orders', badge: data.paidNew + data.pendingRecent > 0 ? `${data.paidNew + data.pendingRecent}` : undefined },
-        { key: 'ship', emoji: '📦', title: 'stepShip', tip: 'stepShipTip', done: data.toShip === 0, href: '/staff/orders?status=paid', badge: data.toShip ? `${data.toShip}` : undefined },
-        { key: 'pickups-ready', emoji: '🛍️', title: 'stepPickups', tip: 'stepPickupsTip', done: data.pickups === 0 || checked('pickups-ready'), manual: data.pickups > 0, href: '/staff/orders#pickup', badge: data.pickups ? `${data.pickups}` : undefined },
-        { key: 'studio', emoji: '📸', title: 'stepStudio', tip: 'stepStudioTip', done: data.studioNew === 0, href: '/staff/studio', badge: data.studioNew ? `${data.studioNew}` : data.studioDone ? `✨ ${data.studioDone}` : undefined },
-        { key: 'drafts', emoji: '🧥', title: 'stepDrafts', tip: 'stepDraftsTip', done: data.drafts === 0, href: '/staff/products?tab=drafts', badge: data.drafts ? `${data.drafts}` : undefined },
-        { key: 'new', emoji: '🎯', title: 'stepNew', tip: 'stepNewTip', done: data.createdToday >= goal, href: '/staff/products/new', badge: `${Math.min(data.createdToday, goal)}/${goal}` },
-        { key: 'note', emoji: '📝', title: 'stepNote', tip: 'stepNoteTip', done: data.notesToday > 0, href: '/staff/team#notes' },
-        ...plan.custom.map((c): Step => ({ key: customKey(c), emoji: c.emoji, title: c.title, tip: c.title, custom: true, manual: true, done: checked(customKey(c)) })),
+        { key: 'shift', phase: 'start' as Phase, emoji: '⏱️', title: 'stepShift', tip: 'stepShiftTip', done: !!shift || data.shiftToday, action: shift ? undefined : async () => { await startShift(); reload(); } },
+        { key: 'prep', phase: 'morning' as Phase, emoji: '☕', title: 'taskPrep', tip: 'taskPrepTip', done: checked('prep'), manual: true },
+        { key: 'sort-new', phase: 'morning' as Phase, emoji: '👕', title: 'taskSortNew', tip: 'taskSortNewTip', done: checked('sort-new'), manual: true, href: '/staff/studio', badge: data.studioNew ? `📸 ${data.studioNew}` : undefined },
+        { key: 'drafts', phase: 'midday' as Phase, emoji: '🧥', title: 'taskDrafts', tip: 'taskDraftsTip', done: checked('drafts') || (draftsOpen === 0 && data.createdToday > 0), manual: true, href: '/staff/products?tab=drafts', badge: draftsOpen ? `${draftsOpen}` : undefined },
+        { key: 'orders', phase: 'midday' as Phase, emoji: '📦', title: 'taskOrders', tip: 'taskOrdersTip', done: checked('orders') && data.toShip === 0, manual: true, href: '/staff/orders', badge: data.toShip + data.pickups + data.paidNew > 0 ? `${data.toShip + data.pickups}` : undefined },
+        { key: 'story', phase: 'afternoon' as Phase, emoji: '📱', title: 'taskStory', tip: 'taskStoryTip', done: checked('story'), manual: true, href: '/staff/studio?tab=sobhi', badge: newMedia ? `🎁 ${newMedia}` : undefined },
+        ...plan.custom.map((c): Step => ({ key: customKey(c), phase: 'anytime', emoji: c.emoji, title: c.title, tip: c.title, custom: true, manual: true, done: checked(customKey(c)) })),
+        { key: 'note', phase: 'evening' as Phase, emoji: '📝', title: 'stepNote', tip: 'stepNoteTip', done: data.notesToday > 0, href: '/staff/team#notes' },
       ].filter((s) => !plan.hidden.includes(s.key))
     : [];
+  const currentPhase = phaseNow(hour);
 
   const doneCount = steps.filter((s) => s.done).length;
   const progress = steps.length ? doneCount / steps.length : 0;
@@ -181,6 +214,17 @@ export default function TodayPage() {
         </div>
       </section>
 
+      {freshDay && (
+        <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3" role="status">
+          <span className="text-2xl" aria-hidden>🌅</span>
+          <div className="flex-1">
+            <p className="font-semibold">{t('newDayTitle')}</p>
+            <p className="text-sm text-amber-900/80">{t('newDayText')}</p>
+          </div>
+          <Btn variant="ghost" className="min-h-8 px-2 text-xs" onClick={dismissFresh} aria-label={t('cancel')}>✕</Btn>
+        </div>
+      )}
+
       {/* Quick actions */}
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
@@ -206,10 +250,10 @@ export default function TodayPage() {
         {/* Pipeline */}
         <Card>
           <CardTitle
-            tip={t('pipelineTip')}
+            tip={t('timelineTip')}
             right={
               <div className="flex items-center gap-1">
-                <Pill tone="teal">{doneCount}/{steps.length || 9}</Pill>
+                <Pill tone="teal">{doneCount}/{steps.length || 7}</Pill>
                 {isManager && data && (
                   <>
                     <Tip text={t('editDayTip')}>
@@ -223,58 +267,74 @@ export default function TodayPage() {
               </div>
             }
           >
-            {t('pipeline')}
+            🕘 {t('timeline')}
           </CardTitle>
           {loading && !data ? (
             <div className="flex justify-center py-10">
               <Spinner />
             </div>
           ) : (
-            <ol className="relative space-y-2">
-              {steps.map((s, i) => (
-                <li
-                  key={s.key}
-                  className={cn(
-                    'flex items-center gap-3 rounded-2xl border px-3 py-3 transition',
-                    s.done ? 'border-emerald-100 bg-emerald-50/60' : s === nextStep ? 'border-brand-teal bg-brand-teal/5 shadow-sm' : 'border-hairline bg-white'
-                  )}
-                >
-                  <span
-                    className={cn(
-                      'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg',
-                      s.done ? 'bg-emerald-500 text-white' : 'bg-black/5'
+            <ol className="relative space-y-1">
+              {/* the line of the day */}
+              <span className="absolute bottom-6 start-[22px] top-6 w-0.5 bg-gradient-to-b from-brand-teal/50 via-brand-plum/30 to-black/10" aria-hidden />
+              {steps.map((s, i) => {
+                const showPhase = i === 0 || steps[i - 1].phase !== s.phase;
+                const isNow = s.phase === currentPhase;
+                return (
+                  <li key={s.key} className="relative">
+                    {showPhase && (
+                      <p className="relative ms-12 mb-1 mt-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted first:mt-0">
+                        {t(PHASE_LABEL[s.phase])}
+                        {isNow && <span className="rounded-full bg-brand-plum px-2 py-0.5 text-[10px] normal-case tracking-normal text-white">● {t('nowLabel')}</span>}
+                      </p>
                     )}
-                    aria-hidden
-                  >
-                    {s.done ? '✓' : s.emoji}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <Tip text={s.custom ? s.tip : t(s.tip as StaffKey)}>
-                      <span tabIndex={0} className={cn('cursor-help text-sm font-semibold outline-none', s.done && 'text-emerald-800')}>
-                        {i + 1}. {label(s)}
+                    <div
+                      className={cn(
+                        'relative flex items-start gap-3 rounded-2xl border px-2 py-2.5 transition',
+                        s.done ? 'border-emerald-100 bg-emerald-50/60' : s === nextStep ? 'border-brand-teal bg-brand-teal/5 shadow-sm' : 'border-transparent bg-white'
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg ring-4 ring-white',
+                          s.done ? 'bg-emerald-500 text-white' : s === nextStep ? 'bg-brand-teal/20' : 'bg-black/5'
+                        )}
+                        aria-hidden
+                      >
+                        {s.done ? '✓' : s.emoji}
                       </span>
-                    </Tip>
-                  </div>
-                  {s.badge && <Pill tone={s.done ? 'good' : 'warn'}>{s.badge}</Pill>}
-                  <div className="flex shrink-0 items-center gap-1">
-                    {s.action && (
-                      <Btn variant="primary" className="min-h-8 px-3 text-xs" onClick={s.action}>
-                        {t('open')}
-                      </Btn>
-                    )}
-                    {s.href && !s.action && (
-                      <Link href={s.href} target={s.href === '/' ? '_blank' : undefined} className="rounded-lg px-2 py-1 text-xs font-semibold text-muted hover:bg-black/5 hover:text-ink">
-                        {t('open')} ↗
-                      </Link>
-                    )}
-                    {s.manual && (
-                      <Btn variant={s.done ? 'ghost' : 'soft'} className="min-h-8 px-3 text-xs" disabled={busyKey === s.key} onClick={() => toggleCheck(s.key)}>
-                        {s.done ? t('undo') : t('markDone')}
-                      </Btn>
-                    )}
-                  </div>
-                </li>
-              ))}
+                      <div className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
+                        <div className="min-w-0 flex-1 basis-[13rem]">
+                          <Tip text={s.custom ? s.tip : t(s.tip as StaffKey)}>
+                            <span tabIndex={0} className={cn('cursor-help text-sm font-semibold outline-none', s.done && 'text-emerald-800 line-through decoration-emerald-300')}>
+                              {label(s)}
+                            </span>
+                          </Tip>
+                          {!s.done && s === nextStep && !s.custom && <p className="mt-0.5 line-clamp-2 text-xs text-muted">{t(s.tip as StaffKey)}</p>}
+                        </div>
+                        <div className="flex shrink-0 items-center gap-1">
+                          {s.badge && <Pill tone={s.done ? 'good' : 'warn'}>{s.badge}</Pill>}
+                          {s.action && (
+                            <Btn variant="primary" className="min-h-8 px-3 text-xs" onClick={s.action}>
+                              {t('open')}
+                            </Btn>
+                          )}
+                          {s.href && !s.action && (
+                            <Link href={s.href} className="rounded-lg px-2 py-1 text-xs font-semibold text-muted hover:bg-black/5 hover:text-ink">
+                              {t('open')} ↗
+                            </Link>
+                          )}
+                          {s.manual && (
+                            <Btn variant={s.done ? 'ghost' : 'soft'} className="min-h-8 px-3 text-xs" disabled={busyKey === s.key} onClick={() => toggleCheck(s.key)}>
+                              {s.done ? t('undo') : t('markDone')}
+                            </Btn>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
             </ol>
           )}
         </Card>
@@ -286,6 +346,28 @@ export default function TodayPage() {
               <Btn variant="soft" className="min-h-8 bg-white/15 px-3 text-xs text-white hover:bg-white/25" onClick={undoReset}>{t('undo')}</Btn>
             </div>
           )}
+          {/* New from Sobhi */}
+          {data && newMedia > 0 && (
+            <Card>
+              <CardTitle right={<Link href="/staff/studio?tab=sobhi" className="text-xs font-semibold text-muted hover:text-ink">{t('open')} ↗</Link>}>
+                🎁 {t('newFromSobhi')} <Pill tone="plum">{newMedia}</Pill>
+              </CardTitle>
+              <Link href="/staff/studio?tab=sobhi" className="grid grid-cols-3 gap-2">
+                {data.media.slice(0, 3).map((m) => (
+                  <span key={m.id} className="relative block aspect-square overflow-hidden rounded-xl bg-black/5">
+                    {isVideo(m) ? (
+                      <video src={`${m.url}#t=0.1`} preload="metadata" muted playsInline className="h-full w-full object-cover" />
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={m.url} alt="" loading="lazy" className="h-full w-full object-cover" />
+                    )}
+                    {isVideo(m) && <span className="absolute inset-0 flex items-center justify-center text-xl text-white drop-shadow" aria-hidden>▶</span>}
+                  </span>
+                ))}
+              </Link>
+            </Card>
+          )}
+
           {/* Pinned notes */}
           <Card>
             <CardTitle tip={t('notesTip')} right={<Link href="/staff/team#notes" className="text-xs font-semibold text-muted hover:text-ink">{t('open')} ↗</Link>}>
@@ -353,16 +435,14 @@ export default function TodayPage() {
   );
 }
 
-// Built-in steps that the day plan can show or hide (order as on Today)
+// Built-in timeline tasks that the day plan can show or hide (order as on Today)
 const BUILT_IN_STEPS: { key: string; emoji: string; title: StaffKey }[] = [
   { key: 'shift', emoji: '⏱️', title: 'stepShift' },
-  { key: 'shop-check', emoji: '🔍', title: 'stepShopCheck' },
-  { key: 'orders-checked', emoji: '💳', title: 'stepOrders' },
-  { key: 'ship', emoji: '📦', title: 'stepShip' },
-  { key: 'pickups-ready', emoji: '🛍️', title: 'stepPickups' },
-  { key: 'studio', emoji: '📸', title: 'stepStudio' },
-  { key: 'drafts', emoji: '🧥', title: 'stepDrafts' },
-  { key: 'new', emoji: '🎯', title: 'stepNew' },
+  { key: 'prep', emoji: '☕', title: 'taskPrep' },
+  { key: 'sort-new', emoji: '👕', title: 'taskSortNew' },
+  { key: 'drafts', emoji: '🧥', title: 'taskDrafts' },
+  { key: 'orders', emoji: '📦', title: 'taskOrders' },
+  { key: 'story', emoji: '📱', title: 'taskStory' },
   { key: 'note', emoji: '📝', title: 'stepNote' },
 ];
 
@@ -429,15 +509,6 @@ function DayPlanEditor({
               );
             })}
           </ul>
-        </div>
-
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-semibold">🎯 {t('dailyGoal')}</p>
-          <div className="flex items-center gap-2">
-            <Btn variant="soft" className="min-h-9 w-9 px-0" onClick={() => setDraft((d) => ({ ...d, goal: Math.max(1, d.goal - 1) }))}>−</Btn>
-            <span className="w-8 text-center font-display text-lg font-bold" aria-live="polite">{draft.goal}</span>
-            <Btn variant="soft" className="min-h-9 w-9 px-0" onClick={() => setDraft((d) => ({ ...d, goal: Math.min(20, d.goal + 1) }))}>+</Btn>
-          </div>
         </div>
 
         <div className="space-y-2">

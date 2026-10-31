@@ -1,14 +1,16 @@
 'use client';
 
 import Image from 'next/image';
-import { useMemo, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useMemo, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useT, StaffKey } from '@/lib/staff/i18n';
 import { useLoad, must } from '@/lib/staff/useLoad';
 import { db, uploadImage, viennaToday, StudioPhoto, StudioStatus } from '@/lib/staff/db';
 import { supabase } from '@/lib/supabase';
 import { Btn, Empty, Help, Pill, Spinner, Tip, useToast } from '@/components/staff/ui';
 import { cn } from '@/lib/utils';
+import { SobhiMedia } from '@/components/staff/SobhiMedia';
+import { loadTeamMedia, mediaSeenAt } from '@/lib/staff/media';
 
 type Album = 'inbox' | 'queued' | 'done' | 'used';
 const ALBUMS: { id: Album; key: StaffKey; emoji: string; statuses: StudioStatus[] }[] = [
@@ -18,7 +20,7 @@ const ALBUMS: { id: Album; key: StaffKey; emoji: string; statuses: StudioStatus[
   { id: 'used', key: 'albumUsed', emoji: '🧥', statuses: ['used'] },
 ];
 
-export default function StudioPage() {
+function PipelineView() {
   const { t } = useT();
   const toast = useToast();
   const router = useRouter();
@@ -87,12 +89,9 @@ export default function StudioPage() {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="flex items-center gap-2 font-display text-2xl font-bold">
-            📸 {t('studioTitle')} <Help text={t('sendToStudioTip')} />
-          </h1>
-          <p className="mt-1 max-w-xl text-sm text-muted">{t('studioSub')}</p>
-        </div>
+        <p className="flex max-w-xl items-center gap-2 text-sm text-muted">
+          {t('studioSub')} <Help text={t('sendToStudioTip')} />
+        </p>
         <Btn variant="primary" onClick={() => fileRef.current?.click()} disabled={uploading}>
           {uploading ? <Spinner className="border-white/40 border-t-white" /> : '⬆️'} {uploading ? t('uploading') : t('uploadPhotos')}
         </Btn>
@@ -193,5 +192,50 @@ export default function StudioPage() {
         </ul>
       )}
     </div>
+  );
+}
+
+type StudioTab = 'pipeline' | 'sobhi';
+
+function StudioTabs() {
+  const { t } = useT();
+  const params = useSearchParams();
+  const router = useRouter();
+  const tab: StudioTab = params.get('tab') === 'sobhi' ? 'sobhi' : 'pipeline';
+  // How many things from Sobhi arrived since this device last looked
+  const { data: media } = useLoad(() => loadTeamMedia(60));
+  const newCount = useMemo(() => {
+    const seen = mediaSeenAt();
+    return (media?.items ?? []).filter((m) => new Date(m.created_at).getTime() > seen).length;
+  }, [media]);
+  const tabs: { id: StudioTab; label: string; emoji: string; badge?: number }[] = [
+    { id: 'pipeline', label: t('studioPipelineTab'), emoji: '🎨' },
+    { id: 'sobhi', label: t('fromSobhi'), emoji: '🎁', badge: tab === 'sobhi' ? 0 : newCount },
+  ];
+  return (
+    <div className="space-y-5">
+      <h1 className="font-display text-2xl font-bold">📸 {t('studioTitle')}</h1>
+      <div className="flex flex-wrap gap-2">
+        {tabs.map((tb) => (
+          <button
+            key={tb.id}
+            onClick={() => router.replace(tb.id === 'sobhi' ? '/staff/studio?tab=sobhi' : '/staff/studio')}
+            className={cn('inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition', tab === tb.id ? 'bg-ink text-white' : 'bg-white text-muted hover:text-ink')}
+          >
+            {tb.emoji} {tb.label}
+            {!!tb.badge && <span className="rounded-full bg-brand-plum px-2 text-xs text-white">{tb.badge} {t('mediaNew')}</span>}
+          </button>
+        ))}
+      </div>
+      {tab === 'sobhi' ? <SobhiMedia /> : <PipelineView />}
+    </div>
+  );
+}
+
+export default function StudioPage() {
+  return (
+    <Suspense fallback={null}>
+      <StudioTabs />
+    </Suspense>
   );
 }
