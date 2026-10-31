@@ -38,6 +38,7 @@ Short how-tos for everything added since October 2026. Code changes are one line
 - See `BRAND.md`. Logo file `public/brand/vintage-closet-logo.png`; colours in `src/styles/tokens.css`.
 
 ## Homepage
+- Many photos at once: Admin → **Site Images** → **Photo Drop** → *Upload photos* (works from the phone gallery too). Photos are shrunk to ~2200 px in the browser, saved in the `site-images` bucket under `library/`, and the AI (`/api/site-images/analyze`, needs `OPENAI_API_KEY`) sorts each one (outfit, clothing, detail, shop, event; women/men/unisex; quality; focal point; carousel caption). It then proposes a photo for every spot (heroes, collection cards, page heroes, story slides, carousel); nothing changes until **Apply**. The sorting is kept in `site-images/library/index.json`, so **Refresh site from library** reshuffles the site later without paying the AI again. Placement rules: `src/lib/photo-library.ts` → `ruleFor()` / `score()`. Lookbook cards from the Rennstern app are never touched.
 - Hero photos: Admin → **Site Images** → hero left/center/right. Autoplay speed: `src/components/landing/Hero.tsx` → `AUTOPLAY_MS`.
 - New Arrivals count on the homepage: `src/app/page.tsx` → `<NewArrivals limit={7} />`.
 - Men/Women buttons: `Hero.tsx` → `SIDE_BUTTON_CLASS`.

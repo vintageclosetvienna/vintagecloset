@@ -81,6 +81,10 @@ The `site-images` bucket stores images organized by section:
 | `story-slides` | "Born from Archive" slides | `story-1`, `story-2`, `story-3` |
 | `collection-heroes` | Shop page heroes | `women-hero`, `men-hero`, `unisex-hero` |
 
+## Photo library (Photo Drop)
+
+Bulk uploads from Admin → Site Images → Photo Drop go to `site-images/library/<time>-<id>.jpg`. The AI sorting of all library photos is stored in `site-images/library/index.json` (cacheControl 0). No extra table or policy is needed: the authenticated insert/update policies above cover both.
+
 ## File Structure
 
 When images are uploaded, they're stored as:

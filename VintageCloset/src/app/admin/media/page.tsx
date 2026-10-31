@@ -15,6 +15,7 @@ import {
   ImageSquare
 } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/Button';
+import { PhotoDrop } from '@/components/admin/PhotoDrop';
 import { 
   getAllSiteImagesAdmin, 
   updateSiteImage, 
@@ -542,21 +543,22 @@ export default function MediaPage() {
   const [savingImageKey, setSavingImageKey] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Fetch images on mount
-  useEffect(() => {
-    async function fetchImages() {
-      setIsLoading(true);
-      try {
-        const data = await getAllSiteImagesAdmin();
-        setImages(data);
-      } catch (error) {
-        console.error('Error fetching site images:', error);
-      } finally {
-        setIsLoading(false);
-      }
+  // Fetch images on mount (and again after Photo Drop changed them)
+  const fetchImages = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await getAllSiteImagesAdmin();
+      setImages(data);
+    } catch (error) {
+      console.error('Error fetching site images:', error);
+    } finally {
+      setIsLoading(false);
     }
-    fetchImages();
   }, []);
+
+  useEffect(() => {
+    fetchImages();
+  }, [fetchImages]);
 
   const handleSave = async (data: { url: string; description?: string; file?: File; objectPosition?: string }) => {
     if (!editingImage) return;
@@ -754,12 +756,18 @@ export default function MediaPage() {
   };
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-display font-bold text-ink">Site Images</h1>
         <p className="text-muted mt-1">Manage images displayed across the website</p>
       </div>
+
+      {/* Many photos at once, placed by the AI */}
+      <PhotoDrop slots={images} onApplied={fetchImages} />
+
+      {/* Or change one spot by hand */}
+      <h2 className="text-lg font-display font-bold text-ink mb-3">Change one spot by hand</h2>
 
       {/* Section Tabs */}
       <div className="flex flex-wrap gap-2 mb-8">
