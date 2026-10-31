@@ -147,6 +147,22 @@ function DraftCard({ draft, onDone, bulk, onBulk }: { draft: DbProductDraft; onD
     onDone();
   };
 
+  // one picture out of the draft (31 Oct, his ask): gone from the draft and its storage; sending the piece again from the app
+  // replaces the whole set with the corrected one
+  const dropImage = async (i: number) => {
+    if (!confirm('Leave this picture out of the draft?')) return;
+    setBusy('discard'); setError(null);
+    const src = draft.images[i];
+    const images = draft.images.filter((_, k) => k !== i);
+    const { error: e } = await supabase.from('product_drafts').update({ images } as never).eq('id', draft.id);
+    if (e) { setError(`Could not remove the picture: ${e.message}`); setBusy(''); return; }
+    const path = decodeURIComponent(plain(src).split('/product-images/')[1] || '');
+    if (path) await supabase.storage.from('product-images').remove([path]);
+    setCover((c) => Math.max(0, Math.min(c, images.length - 1)));
+    setBusy('');
+    onDone();
+  };
+
   // the page's accept-all / discard-all: once per signal; a draft without price, size, gender or category is left for you
   const seen = useRef(0);
   useEffect(() => {
@@ -168,10 +184,16 @@ function DraftCard({ draft, onDone, bulk, onBulk }: { draft: DbProductDraft; onD
         </div>
         <div className="flex gap-1.5 mt-2 overflow-x-auto">
           {draft.images.map((src, i) => (
-            <button key={src} type="button" onClick={() => setCover(i)}
-              className={`relative w-12 h-16 flex-shrink-0 rounded overflow-hidden border-2 ${i === cover ? 'border-accent-start' : 'border-transparent'}`}>
-              <Image src={src} alt="" fill sizes="48px" className="object-cover" unoptimized />
-            </button>
+            <div key={src} className="relative group/th flex-shrink-0">
+              <button type="button" onClick={() => setCover(i)}
+                className={`relative block w-12 h-16 rounded overflow-hidden border-2 ${i === cover ? 'border-accent-start' : 'border-transparent'}`}>
+                <Image src={src} alt="" fill sizes="48px" className="object-cover" unoptimized />
+              </button>
+              {draft.images.length > 1 && (
+                <button type="button" onClick={() => dropImage(i)} disabled={!!busy} title="Leave this picture out"
+                  className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-red-600 text-white text-[11px] leading-none opacity-0 group-hover/th:opacity-100 focus:opacity-100 transition-opacity">×</button>
+              )}
+            </div>
           ))}
         </div>
       </div>
