@@ -14,6 +14,7 @@ import { CATEGORIES_BY_GENDER, PRODUCT_GENDERS, ProductGender } from '@/lib/prod
  *                               → the draft for this piece (same ref = same draft) + one signed upload link per photo
  *                                 (photos go straight to Storage, past Vercel's 4.5 MB request limit)
  *   POST { action: 'finish', draft_id, ref, count, views?, facts }
+ *   POST { action: 'discard', ref }  → that piece's draft and its photos removed (it became a model look)
  *                               → photos attached, the website's AI writes title, description and era (same as the
  *                                 admin autofill), the app's label reading (brand, size) fills what the AI leaves open
  *
@@ -52,6 +53,21 @@ export async function POST(request: NextRequest) {
   }
 
   const ref = text(body.ref, 200);
+
+  // a piece that is no product any more (a model set goes to the lookbook only): its old draft and photos go (31 Oct, kept in sync)
+  if (body.action === 'discard') {
+    if (!ref) return NextResponse.json({ error: 'ref is required.' }, { status: 400 });
+    const db = createServerClient();
+    const { data: old } = await db.from('product_drafts').select('id').eq('source', 'rennstern-app').eq('source_ref', ref).maybeSingle();
+    if (!old) return NextResponse.json({ ok: true, removed: 0 });
+    const id = (old as { id: string }).id;
+    const { data: files } = await db.storage.from(BUCKET).list(id);
+    if (files?.length) await db.storage.from(BUCKET).remove(files.map((f) => `${id}/${f.name}`));
+    const { error } = await db.from('product_drafts').delete().eq('id', id);
+    if (error) return NextResponse.json({ error: `Could not remove the draft: ${error.message}` }, { status: 500 });
+    return NextResponse.json({ ok: true, removed: 1 });
+  }
+
   const count = Number(body.count);
   if (!ref || !Number.isInteger(count) || count < 1 || count > MAX_PHOTOS) {
     return NextResponse.json({ error: `ref and count (1–${MAX_PHOTOS}) are required.` }, { status: 400 });
