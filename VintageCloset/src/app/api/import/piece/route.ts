@@ -37,6 +37,11 @@ interface Facts {
 
 const text = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 
+// the app's check: is the import set up, is its key right (31 Oct: lost in the lookbook refactor, so the app said "not reachable")
+export async function GET(request: NextRequest) {
+  return NextResponse.json({ ok: true, ready: ready(), authorized: ready() && authorized(request) });
+}
+
 export async function POST(request: NextRequest) {
   if (!ready()) {
     return NextResponse.json({ error: 'The import is not set up yet (VINTAGE_IMPORT_KEY missing on Vercel).' }, { status: 503 });
