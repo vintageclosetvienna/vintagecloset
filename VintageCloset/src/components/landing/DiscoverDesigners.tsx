@@ -12,7 +12,11 @@ import type { Product } from '@/lib/data';
 
 function Mark({ d }: { d: Designer }) {
   if (d.logo) {
-    return <SafeImage src={d.logo} alt={`${d.name} logo`} fill sizes="240px" className="object-contain p-6" />;
+    return (
+      <div className="absolute inset-0" style={{ background: d.wordmark.bg }}>
+        <SafeImage src={d.logo} alt={`${d.name} logo`} fill sizes="320px" className="object-contain p-8 md:p-10" />
+      </div>
+    );
   }
   const font = d.wordmark.font === 'serif' ? 'font-serif tracking-[0.12em]' : d.wordmark.font === 'script' ? 'italic font-semibold' : 'font-display font-black uppercase tracking-tight';
   return (
@@ -70,7 +74,14 @@ export function DiscoverDesigners() {
             className="overflow-hidden"
           >
             <div className="mt-6 rounded-2xl bg-surface p-4 md:p-6">
-              <p className="text-sm text-muted mb-4">{shown.designer.line}</p>
+              <p className="text-sm text-muted mb-4">
+                {shown.designer.line}
+                {shown.designer.site && (
+                  <a href={shown.designer.site} target="_blank" rel="noopener noreferrer" className="ml-2 underline underline-offset-2 hover:text-ink">
+                    {shown.designer.site.replace(/^https?:\/\/(www\.)?/, '')}
+                  </a>
+                )}
+              </p>
               <div className="flex gap-4 overflow-x-auto pb-2 snap-x">
                 {shown.pieces.map((p) => (
                   <Link key={p.id} href={`/product/${p.slug}`} className="flex-shrink-0 snap-start w-36 md:w-44">

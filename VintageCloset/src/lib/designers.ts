@@ -14,15 +14,19 @@ export interface Designer {
   line: string;
   match: string[];                                   // words that mean "their piece" in a title or description
   logo?: string;
+  site?: string;
   wordmark: { bg: string; fg: string; font: 'block' | 'serif' | 'script' };
 }
 
 export const DEFAULT_DESIGNERS: Designer[] = [
   { slug: 'daszeugs', name: 'DAS ZEUGS', kind: 'Artist collective', line: 'Für immer für alle', match: ['das zeugs', 'daszeugs', 'das zgs'],
+    logo: '/designers/daszeugs.jpg', site: 'https://www.daszeugs.com',      // logo from daszeugs.com
     wordmark: { bg: '#ffffff', fg: '#111111', font: 'block' } },
-  { slug: 'gwond', name: 'GWOND', kind: 'Brand', line: 'Made in Vienna', match: ['gwond'],
+  { slug: 'gwond', name: 'GWOND', kind: 'Brand', line: 'Einführung in die Gunstgeschichte', match: ['gwond'],
+    logo: '/designers/gwond.png', site: 'https://gwond.com',               // logo from gwond.com (white version, on black)
     wordmark: { bg: '#0b0b0b', fg: '#ffffff', font: 'serif' } },
-  { slug: 'sirens-chrome', name: "Siren's Chrome", kind: 'Designer', line: 'Chrome, lace and night', match: ["siren's chrome", 'sirens chrome', 'siren chrome'],
+  { slug: 'sirens-chrome', name: "Siren's Chrome", kind: 'Jewellery designer', line: 'Handmade one-of-a-kind jewellery: you were never meant to blend in', match: ["siren's chrome", 'sirens chrome', 'siren chrome'],
+    site: 'https://www.sirens-chrome.com',                                  // their site has no logo file yet: wordmark
     wordmark: { bg: '#ffffff', fg: '#7b2a6b', font: 'script' } },
 ];
 
