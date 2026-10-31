@@ -5,6 +5,8 @@ import { SITE_URL, SITE_NAME } from '@/lib/site';
 import { ProductGallery } from '@/components/shop/ProductGallery';
 import { ProductInfo } from '@/components/shop/ProductInfo';
 import { ProductGrid } from '@/components/shop/ProductGrid';
+import { ProductTurnCard } from '@/components/shop/ProductTurnCard';
+import { turnViews } from '@/lib/turn-views';
 import { Reveal } from '@/components/shared/Reveal';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -142,6 +144,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   // Determine the collection path based on gender
   const collectionPath = `/${product.gender}`;
   const collectionName = product.gender.charAt(0).toUpperCase() + product.gender.slice(1);
+  // the turn card (front → side → back) for pieces sent from the shop's app; on phones it follows the price, on a wide screen it sits under the photos
+  const turn = turnViews(product.images);
 
   return (
     <div className="min-h-screen pb-24 bg-surface">
@@ -161,9 +165,14 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
            <div className="lg:col-span-7">
               <ProductGallery images={product.images || [product.image]} />
            </div>
-           <div className="lg:col-span-5 lg:sticky lg:top-24 h-fit">
+           <div className={`lg:col-span-5 lg:sticky lg:top-24 h-fit ${turn.length >= 2 ? 'lg:row-span-2' : ''}`}>
               <ProductInfo product={product} />
            </div>
+           {turn.length >= 2 && (
+              <div className="lg:col-span-7">
+                 <ProductTurnCard views={turn} title={product.title} />
+              </div>
+           )}
         </div>
 
         {/* Related Items */}

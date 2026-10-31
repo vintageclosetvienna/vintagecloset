@@ -10,10 +10,10 @@ import { CATEGORIES_BY_GENDER, PRODUCT_GENDERS, ProductGender } from '@/lib/prod
  * Nothing reaches the shop until you set the price and publish it there.
  *
  *   GET                         → { ready, authorized }  (is the import set up; is this key right; no secrets)
- *   POST { action: 'start', ref, count }
+ *   POST { action: 'start', ref, count, views? }
  *                               → the draft for this piece (same ref = same draft) + one signed upload link per photo
  *                                 (photos go straight to Storage, past Vercel's 4.5 MB request limit)
- *   POST { action: 'finish', draft_id, ref, count, facts }
+ *   POST { action: 'finish', draft_id, ref, count, views?, facts }
  *                               → photos attached, the website's AI writes title, description and era (same as the
  *                                 admin autofill), the app's label reading (brand, size) fills what the AI leaves open
  *
@@ -58,7 +58,11 @@ export async function POST(request: NextRequest) {
   }
 
   const db = createServerClient();
-  const photoPaths = (id: string) => Array.from({ length: count }, (_, i) => `${id}/${i}.jpg`);
+  // the app names each photo's view (ad, front, back, side, detail …): it goes into the file name, so the product page builds its
+  // turn card from front / side / back (31 Oct); without views the plain names stay
+  const views = Array.isArray(body.views) && body.views.length === count && body.views.every((v) => typeof v === 'string' && /^[a-z]{2,12}$/.test(v))
+    ? (body.views as string[]) : null;
+  const photoPaths = (id: string) => Array.from({ length: count }, (_, i) => `${id}/${i}${views ? `-${views[i]}` : ''}.jpg`);
 
   if (body.action === 'start') {
     // one draft per piece: sending the same piece again updates it instead of making a second one
