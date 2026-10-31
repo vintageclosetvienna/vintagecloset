@@ -51,7 +51,7 @@ function ShopStrip({ slugs, caption }: { slugs: string[]; caption: string }) {
               <div className="relative aspect-[3/4] overflow-hidden bg-white">
                 <SafeImage src={p.image} alt={p.title} fill sizes="(max-width: 768px) 30vw, 200px" className="object-cover transition-transform duration-700 group-hover:scale-105" />
               </div>
-              <p className="mt-2 text-[13px] leading-snug text-ink line-clamp-1">{p.title.trim()}</p>
+              <p className="mt-2 text-[13px] leading-snug text-ink line-clamp-2">{p.title.trim()}</p>
               <p className="text-[12px] text-muted flex items-center gap-1">
                 {getDiscountedPrice(p.price, p.discount)}{p.size ? ` · ${p.size}` : ''}
                 <ArrowRight size={10} weight="bold" className="opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />

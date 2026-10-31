@@ -172,7 +172,7 @@ function PlaceGroup({ place, events, open, onToggle }: { place: EventPlace; even
           <h2 className="text-xl md:text-2xl font-display font-bold text-ink leading-tight">{P.title}</h2>
           <p className="text-sm text-muted mt-0.5 line-clamp-1">{P.sub}</p>
           <p className="text-xs text-muted mt-1 flex items-center gap-1.5"><MapPin size={12} weight="bold" className="text-accent-start" /> {P.address}
-            <span className="mx-1">·</span> {events.length} event{events.length === 1 ? '' : 's'}{next ? ` · next ${formatEventDate(next.date)}` : ''}</p>
+            <span className="mx-1">·</span> {events.length} event{events.length === 1 ? '' : 's'}{next ? (next.status === 'Now Open' ? ' · now open' : ` · next ${formatEventDate(next.date)}`) : ''}</p>
         </div>
         <CaretDown size={22} weight="bold" className={`text-muted flex-shrink-0 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
       </button>
