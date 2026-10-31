@@ -64,14 +64,23 @@ function GalleryImage({
 export function ProductGallery({ images }: ProductGalleryProps) {
   const [activeImage, setActiveImage] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  // magnifier (his ask 31 Oct): with a mouse, the photo zooms in 2.4× where the pointer is, so the leather grain and seams show
+  const [zoom, setZoom] = useState<{ x: number; y: number } | null>(null);
+  const onMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== 'mouse') return;
+    const r = e.currentTarget.getBoundingClientRect();
+    setZoom({ x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 });
+  };
 
   return (
     <>
       <div className="flex flex-col gap-4">
          {/* Main Image */}
          <div 
-            className="relative aspect-[3/4] w-full bg-gray-100 rounded-2xl overflow-hidden shadow-lg cursor-pointer group"
+            className={cn("relative aspect-[3/4] w-full bg-gray-100 rounded-2xl overflow-hidden shadow-lg group", zoom ? "cursor-zoom-in" : "cursor-pointer")}
             onClick={() => setIsLightboxOpen(true)}
+            onPointerMove={onMove}
+            onPointerLeave={() => setZoom(null)}
          >
             <AnimatePresence mode="wait">
                <motion.div
@@ -82,19 +91,24 @@ export function ProductGallery({ images }: ProductGalleryProps) {
                   transition={{ duration: 0.4 }}
                   className="absolute inset-0"
                >
-                  <GalleryImage 
-                     src={images[activeImage]} 
-                     alt="Product Main" 
-                     className="object-cover group-hover:scale-105 transition-transform duration-700" 
-                     priority
-                  />
+                  <div
+                     className="absolute inset-0 transition-transform duration-200 ease-out will-change-transform"
+                     style={zoom ? { transform: 'scale(2.4)', transformOrigin: `${zoom.x}% ${zoom.y}%` } : undefined}
+                  >
+                     <GalleryImage 
+                        src={images[activeImage]} 
+                        alt="Product Main" 
+                        className="object-cover" 
+                        priority
+                     />
+                  </div>
                </motion.div>
             </AnimatePresence>
             
             {/* Zoom Hint */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-               <span className="text-white text-sm font-medium bg-black/40 backdrop-blur-sm px-4 py-2 rounded-full">
-                  Click to zoom
+            <div className={cn("absolute inset-x-0 bottom-4 flex justify-center pointer-events-none transition-opacity", zoom ? "opacity-0" : "opacity-0 group-hover:opacity-100")}>
+               <span className="text-white text-xs font-medium bg-black/40 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                  Move to magnify · click for full view
                </span>
             </div>
          </div>
