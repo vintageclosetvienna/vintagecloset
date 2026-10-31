@@ -5,6 +5,8 @@ import { CalloutBanner } from "@/components/landing/CalloutBanner";
 import { MediaCarousel } from "@/components/landing/MediaCarousel";
 import { LookbookDecks } from "@/components/landing/LookbookDecks";
 import { DiscoverDesigners } from "@/components/landing/DiscoverDesigners";
+import { HomePosters } from "@/components/landing/HomePosters";
+import { InstagramStory } from "@/components/shared/InstagramStory";
 import { StoreStory } from "@/components/landing/StoreStory";
 import { CollectionHighlights } from "@/components/landing/CollectionHighlights";
 import { CapabilitiesStrip } from "@/components/landing/CapabilitiesStrip";
@@ -27,6 +29,7 @@ export default function Home() {
       <MediaCarousel />
       <LookbookDecks />
       <DiscoverDesigners />
+      <HomePosters />
       
       <StoreStory />
       <CapabilitiesStrip />
@@ -36,6 +39,7 @@ export default function Home() {
       <Stats />
       <JournalEventsTeaser />
       <CallToAction />
+      <InstagramStory />
     </div>
   );
 }

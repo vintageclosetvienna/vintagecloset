@@ -8,12 +8,18 @@ import { LineupMarquee } from '@/components/events/LineupMarquee';
 import { Reveal } from '@/components/shared/Reveal';
 import { Button } from '@/components/ui/Button';
 import { SafeImage } from '@/components/ui/SafeImage';
-import { MapPin, Clock, CalendarCheck, ArrowRight, Bell } from '@phosphor-icons/react';
+import { MapPin, Clock, CalendarCheck, ArrowRight, Bell, CaretDown } from '@phosphor-icons/react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { EventPoster } from '@/components/events/EventPoster';
 import { 
   getEvents, 
   Event,
   formatEventDate,
   getShortDate,
+  placeOf,
+  postersOf,
+  EVENT_PLACES,
+  type EventPlace,
 } from '@/lib/events-data';
 import { getSiteImage } from '@/lib/site-images';
 
@@ -34,9 +40,159 @@ function EventCardSkeleton() {
   );
 }
 
+function EventCard({ event, idx }: { event: Event; idx: number }) {
+  const shortDate = getShortDate(event.date);
+  return (
+      <Reveal key={event.id} delay={idx * 0.1} width="100%">
+        <article className="group w-full bg-white rounded-2xl md:rounded-3xl overflow-hidden border border-hairline shadow-sm hover:shadow-xl transition-all duration-500">
+          <div className="grid grid-cols-1 md:grid-cols-[320px_1fr]">
+            {/* Image - Fixed size container */}
+            <div className="relative h-[200px] md:h-[260px] overflow-hidden">
+              {event.image ? (
+                <Image 
+                  src={event.image} 
+                  alt={event.title} 
+                  fill 
+                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+              ) : (
+                <div className="w-full h-full bg-surface flex items-center justify-center">
+                  <CalendarCheck size={64} className="text-muted" />
+                </div>
+              )}
+              {/* Status Badge */}
+              <div className="absolute top-4 left-4">
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md shadow-sm ${
+                  event.status === 'Upcoming' 
+                    ? 'bg-white/95 backdrop-blur-sm text-accent-start' 
+                    : 'bg-ink/80 backdrop-blur-sm text-white'
+                }`}>
+                  <CalendarCheck weight="bold" size={12} />
+                  {event.status}
+                </span>
+              </div>
+            </div>
+            
+            {/* Content - Fixed height to match image */}
+            <div className="p-6 md:p-8 h-auto md:min-h-[260px] flex flex-col">
+              {/* Header Row */}
+              <div className="flex items-start justify-between gap-4 mb-3">
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-xl md:text-2xl font-display font-bold text-ink group-hover:text-accent-start transition-colors leading-tight truncate">
+                    {event.title}
+                  </h2>
+                  <p className="text-sm text-muted mt-1">{event.endDate ? weekendLabel(event.date, event.endDate) : formatEventDate(event.date)}</p>
+                </div>
+                
+                {/* Date Box */}
+                <div className="hidden md:flex flex-col items-center justify-center w-16 h-16 bg-surface rounded-xl border border-hairline flex-shrink-0">
+                  <span className="text-xl font-display font-bold text-accent-start leading-none">
+                    {shortDate.day}
+                  </span>
+                  <span className="text-[10px] font-bold text-muted uppercase mt-0.5">
+                    {shortDate.month}
+                  </span>
+                </div>
+              </div>
+              
+              {/* Description - Fixed height with clamp */}
+              <p className="text-muted text-sm leading-relaxed line-clamp-2 mb-auto">
+                {event.description}
+              </p>
+              
+              {/* Meta Info - Fixed position at bottom */}
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted mb-4 mt-4">
+                <div className="flex items-center gap-2">
+                  <MapPin weight="bold" size={14} className="text-accent-start flex-shrink-0" />
+                  <span className="text-xs">{event.location}</span>
+                </div>
+                {event.time && (
+                  <div className="flex items-center gap-2">
+                    <Clock weight="bold" size={14} className="text-accent-start flex-shrink-0" />
+                    <span className="text-xs">{event.time}</span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Line-up preview and the way into the weekend page */}
+              {event.lineup.length > 0 ? (
+                <div className="mb-4 flex flex-wrap gap-1.5">
+                  {event.lineup.map((slot) => (
+                    <span
+                      key={slot.id}
+                      className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                        isOpenSlot(slot)
+                          ? 'border border-dashed border-brand-teal text-brand-teal'
+                          : 'bg-brand-teal/15 text-brand-plum'
+                      }`}
+                    >
+                      {slot.day} · {isOpenSlot(slot) ? 'open' : slot.name}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+              <div className="flex items-center gap-3">
+                <Link href={`/events/${event.slug}`}>
+                  <Button size="sm" className="min-w-[120px]">
+                    {event.status === 'Past' ? 'See the photos' : 'Line up & details'}
+                  </Button>
+                </Link>
+                {isLiveWeekend(event.date, event.endDate) ? (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-plum">
+                    <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" /> Live now
+                  </span>
+                ) : event.spotsLeft !== null ? (
+                  <span className="text-xs text-muted">{event.spotsLeft} spots left</span>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        </article>
+      </Reveal>
+  );
+}
+
+// One expandable card per place (his ask 31 Oct): 1090 shop events (with the Infinito hub) and 1070 pop up weekends
+function PlaceGroup({ place, events, open, onToggle }: { place: EventPlace; events: Event[]; open: boolean; onToggle: () => void }) {
+  const P = EVENT_PLACES[place];
+  const next = events.find((e) => e.status !== 'Past');
+  return (
+    <section className={`rounded-3xl border border-hairline bg-white/60 transition-shadow ${open ? 'shadow-lg' : 'shadow-sm hover:shadow-md'}`}>
+      <button type="button" onClick={onToggle} aria-expanded={open} className="w-full flex items-center gap-4 p-5 md:p-6 text-left">
+        <div className="flex -space-x-3 flex-shrink-0">
+          {events.filter((e) => e.image).slice(0, 3).map((e) => (
+            <span key={e.id} className="relative h-12 w-12 md:h-14 md:w-14 rounded-xl overflow-hidden border-2 border-white shadow-sm bg-surface">
+              <SafeImage src={e.image} alt="" fill sizes="56px" className="object-cover" />
+            </span>
+          ))}
+        </div>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-xl md:text-2xl font-display font-bold text-ink leading-tight">{P.title}</h2>
+          <p className="text-sm text-muted mt-0.5 line-clamp-1">{P.sub}</p>
+          <p className="text-xs text-muted mt-1 flex items-center gap-1.5"><MapPin size={12} weight="bold" className="text-accent-start" /> {P.address}
+            <span className="mx-1">·</span> {events.length} event{events.length === 1 ? '' : 's'}{next ? ` · next ${formatEventDate(next.date)}` : ''}</p>
+        </div>
+        <CaretDown size={22} weight="bold" className={`text-muted flex-shrink-0 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: .35 }} className="overflow-hidden">
+            <div className="grid grid-cols-1 gap-6 md:gap-8 px-3 pb-3 md:px-5 md:pb-5">
+              {events.length === 0
+                ? <p className="text-sm text-muted px-2 pb-4">No events here yet.</p>
+                : events.map((event, idx) => <EventCard key={event.id} event={event} idx={idx} />)}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </section>
+  );
+}
+
 export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [openPlace, setOpenPlace] = useState<EventPlace | null>(null);
   const [heroImage, setHeroImage] = useState('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=2070&auto=format&fit=crop');
 
   useEffect(() => {
@@ -48,6 +204,8 @@ export default function EventsPage() {
           getSiteImage('events-hero')
         ]);
         setEvents(eventsData);
+        const soon = eventsData.filter((e) => e.status !== 'Past').sort((x, y) => x.date.localeCompare(y.date))[0];
+        setOpenPlace(soon ? placeOf(soon) : 'popup1070');
         if (heroImg) setHeroImage(heroImg.url);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -108,7 +266,8 @@ export default function EventsPage() {
       {/* Events List */}
       <section className="py-16 md:py-24">
         <div className="container mx-auto px-4">
-          <div className="max-w-5xl mx-auto grid grid-cols-1 gap-8 md:gap-10">
+          <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 lg:gap-10 items-start">
+          <div className="grid grid-cols-1 gap-6 md:gap-8 min-w-0">
             {isLoading ? (
               // Loading skeletons
               [...Array(3)].map((_, i) => (
@@ -125,119 +284,22 @@ export default function EventsPage() {
               </div>
             ) : (
               // Events list
-              events.map((event, idx) => {
-                const shortDate = getShortDate(event.date);
-                
-                return (
-                  <Reveal key={event.id} delay={idx * 0.1} width="100%">
-                    <article className="group w-full bg-white rounded-2xl md:rounded-3xl overflow-hidden border border-hairline shadow-sm hover:shadow-xl transition-all duration-500">
-                      <div className="grid grid-cols-1 md:grid-cols-[320px_1fr]">
-                        {/* Image - Fixed size container */}
-                        <div className="relative h-[200px] md:h-[260px] overflow-hidden">
-                          {event.image ? (
-                            <Image 
-                              src={event.image} 
-                              alt={event.title} 
-                              fill 
-                              className="object-cover transition-transform duration-700 group-hover:scale-105"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-surface flex items-center justify-center">
-                              <CalendarCheck size={64} className="text-muted" />
-                            </div>
-                          )}
-                          {/* Status Badge */}
-                          <div className="absolute top-4 left-4">
-                            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md shadow-sm ${
-                              event.status === 'Upcoming' 
-                                ? 'bg-white/95 backdrop-blur-sm text-accent-start' 
-                                : 'bg-ink/80 backdrop-blur-sm text-white'
-                            }`}>
-                              <CalendarCheck weight="bold" size={12} />
-                              {event.status}
-                            </span>
-                          </div>
-                        </div>
-                        
-                        {/* Content - Fixed height to match image */}
-                        <div className="p-6 md:p-8 h-auto md:min-h-[260px] flex flex-col">
-                          {/* Header Row */}
-                          <div className="flex items-start justify-between gap-4 mb-3">
-                            <div className="min-w-0 flex-1">
-                              <h2 className="text-xl md:text-2xl font-display font-bold text-ink group-hover:text-accent-start transition-colors leading-tight truncate">
-                                {event.title}
-                              </h2>
-                              <p className="text-sm text-muted mt-1">{event.endDate ? weekendLabel(event.date, event.endDate) : formatEventDate(event.date)}</p>
-                            </div>
-                            
-                            {/* Date Box */}
-                            <div className="hidden md:flex flex-col items-center justify-center w-16 h-16 bg-surface rounded-xl border border-hairline flex-shrink-0">
-                              <span className="text-xl font-display font-bold text-accent-start leading-none">
-                                {shortDate.day}
-                              </span>
-                              <span className="text-[10px] font-bold text-muted uppercase mt-0.5">
-                                {shortDate.month}
-                              </span>
-                            </div>
-                          </div>
-                          
-                          {/* Description - Fixed height with clamp */}
-                          <p className="text-muted text-sm leading-relaxed line-clamp-2 mb-auto">
-                            {event.description}
-                          </p>
-                          
-                          {/* Meta Info - Fixed position at bottom */}
-                          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted mb-4 mt-4">
-                            <div className="flex items-center gap-2">
-                              <MapPin weight="bold" size={14} className="text-accent-start flex-shrink-0" />
-                              <span className="text-xs">{event.location}</span>
-                            </div>
-                            {event.time && (
-                              <div className="flex items-center gap-2">
-                                <Clock weight="bold" size={14} className="text-accent-start flex-shrink-0" />
-                                <span className="text-xs">{event.time}</span>
-                              </div>
-                            )}
-                          </div>
-                          
-                          {/* Line-up preview and the way into the weekend page */}
-                          {event.lineup.length > 0 ? (
-                            <div className="mb-4 flex flex-wrap gap-1.5">
-                              {event.lineup.map((slot) => (
-                                <span
-                                  key={slot.id}
-                                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                                    isOpenSlot(slot)
-                                      ? 'border border-dashed border-brand-teal text-brand-teal'
-                                      : 'bg-brand-teal/15 text-brand-plum'
-                                  }`}
-                                >
-                                  {slot.day} · {isOpenSlot(slot) ? 'open' : slot.name}
-                                </span>
-                              ))}
-                            </div>
-                          ) : null}
-                          <div className="flex items-center gap-3">
-                            <Link href={`/events/${event.slug}`}>
-                              <Button size="sm" className="min-w-[120px]">
-                                {event.status === 'Past' ? 'See the photos' : 'Line up & details'}
-                              </Button>
-                            </Link>
-                            {isLiveWeekend(event.date, event.endDate) ? (
-                              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-plum">
-                                <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" /> Live now
-                              </span>
-                            ) : event.spotsLeft !== null ? (
-                              <span className="text-xs text-muted">{event.spotsLeft} spots left</span>
-                            ) : null}
-                          </div>
-                        </div>
-                      </div>
-                    </article>
-                  </Reveal>
-                );
-              })
+              <>
+                {(Object.keys(EVENT_PLACES) as EventPlace[]).map((place) => (
+                  <PlaceGroup key={place} place={place} events={events.filter((e) => placeOf(e) === place)}
+                    open={openPlace === place} onToggle={() => setOpenPlace(openPlace === place ? null : place)} />
+                ))}
+              </>
             )}
+          </div>
+          {/* the posters, beside the list (his reference: a poster post) */}
+          {!isLoading && postersOf(events).length > 0 && (
+            <aside className="lg:sticky lg:top-24 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-5">
+              {postersOf(events).map(({ place, event }) => (
+                <EventPoster key={place} event={event} venue={EVENT_PLACES[place].venue} />
+              ))}
+            </aside>
+          )}
           </div>
         </div>
       </section>

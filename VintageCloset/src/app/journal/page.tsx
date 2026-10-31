@@ -12,6 +12,7 @@ import {
   type JournalArticle 
 } from '@/lib/journal-data';
 import { getSiteImage } from '@/lib/site-images';
+import { InstagramStory } from '@/components/shared/InstagramStory';
 
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
@@ -133,6 +134,7 @@ export default function JournalPage() {
 
   return (
     <div className="min-h-screen bg-surface">
+      <InstagramStory />
       {/* Hero */}
       <div className="relative min-h-[50vh] md:min-h-[45vh] flex items-end">
         <SafeImage 
