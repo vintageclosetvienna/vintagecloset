@@ -101,8 +101,9 @@ function DraftCard({ draft, onDone, bulk, onBulk }: { draft: DbProductDraft; onD
     }
   };
 
+  const missing = [!edit.title && 'title', !(price > 0) && 'price', !edit.size && 'size', !edit.gender && 'gender', !edit.category && 'category'].filter(Boolean) as string[];
   const publish = async () => {
-    if (!valid) return;
+    if (!valid) { setError(`Still needed to publish: ${missing.join(', ')}.`); return false; }
     setBusy('publish'); setError(null);
     const base = generateSlug(edit.title) || 'vintage-piece';
     const product = {
@@ -220,7 +221,7 @@ function DraftCard({ draft, onDone, bulk, onBulk }: { draft: DbProductDraft; onD
         {error && <p className="text-sm text-red-600">{error}</p>}
 
         <div className="flex flex-wrap items-center gap-2 pt-1">
-          <Button onClick={publish} disabled={!valid || !!busy} isLoading={busy === 'publish'} className="gap-2">
+          <Button onClick={publish} disabled={!!busy} isLoading={busy === 'publish'} className={`gap-2 ${valid ? '' : 'opacity-70'}`} title={valid ? 'Publish to the shop' : `Still needed: ${missing.join(', ')}`}>
             <CheckCircle size={16} weight="bold" /> Publish to the shop
           </Button>
           <Button variant="secondary" onClick={rewrite} disabled={!!busy} isLoading={busy === 'ai'} className="gap-2">
